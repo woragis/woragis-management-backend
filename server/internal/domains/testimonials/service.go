@@ -243,14 +243,7 @@ func (s *service) GetTestimonial(ctx context.Context, testimonialID uuid.UUID) (
 }
 
 func (s *service) ListTestimonials(ctx context.Context, filters ListTestimonialsFilters) ([]Testimonial, error) {
-	repoFilters := TestimonialFilters{
-		UserID: filters.UserID,
-		Status: filters.Status,
-		Limit:  filters.Limit,
-		Offset: filters.Offset,
-		OrderBy: filters.OrderBy,
-		Order:   filters.Order,
-	}
+	repoFilters := TestimonialFilters(filters)
 
 	return s.repo.ListTestimonials(ctx, repoFilters)
 }

@@ -90,23 +90,7 @@ func (h *handler) CreateExperience(c *fiber.Ctx) error {
 		return response.Error(c, fiber.StatusBadRequest, ErrCodeInvalidPayload, nil)
 	}
 
-	experience, err := h.service.CreateExperience(c.Context(), userID, CreateExperienceRequest{
-		Company:      payload.Company,
-		Position:     payload.Position,
-		PeriodStart:  payload.PeriodStart,
-		PeriodEnd:    payload.PeriodEnd,
-		PeriodText:   payload.PeriodText,
-		Location:     payload.Location,
-		Description:  payload.Description,
-		Type:         payload.Type,
-		CompanyURL:   payload.CompanyURL,
-		LinkedInURL:  payload.LinkedInURL,
-		DisplayOrder: payload.DisplayOrder,
-		IsCurrent:    payload.IsCurrent,
-		Technologies: payload.Technologies,
-		Projects:     payload.Projects,
-		Achievements: payload.Achievements,
-	})
+	experience, err := h.service.CreateExperience(c.Context(), userID, CreateExperienceRequest(payload))
 	if err != nil {
 		return h.handleError(c, err)
 	}
@@ -134,23 +118,7 @@ func (h *handler) UpdateExperience(c *fiber.Ctx) error {
 		return response.Error(c, fiber.StatusBadRequest, ErrCodeInvalidPayload, nil)
 	}
 
-	experience, err := h.service.UpdateExperience(c.Context(), userID, experienceID, UpdateExperienceRequest{
-		Company:      payload.Company,
-		Position:     payload.Position,
-		PeriodStart:  payload.PeriodStart,
-		PeriodEnd:    payload.PeriodEnd,
-		PeriodText:   payload.PeriodText,
-		Location:     payload.Location,
-		Description:  payload.Description,
-		Type:         payload.Type,
-		CompanyURL:   payload.CompanyURL,
-		LinkedInURL:  payload.LinkedInURL,
-		DisplayOrder: payload.DisplayOrder,
-		IsCurrent:    payload.IsCurrent,
-		Technologies: payload.Technologies,
-		Projects:     payload.Projects,
-		Achievements: payload.Achievements,
-	})
+	experience, err := h.service.UpdateExperience(c.Context(), userID, experienceID, UpdateExperienceRequest(payload))
 	if err != nil {
 		return h.handleError(c, err)
 	}

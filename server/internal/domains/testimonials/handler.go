@@ -92,20 +92,7 @@ func (h *handler) CreateTestimonial(c *fiber.Ctx) error {
 		return response.Error(c, fiber.StatusBadRequest, ErrCodeInvalidPayload, nil)
 	}
 
-	testimonial, err := h.service.CreateTestimonial(c.Context(), userID, CreateTestimonialRequest{
-		AuthorName:    payload.AuthorName,
-		AuthorRole:    payload.AuthorRole,
-		AuthorCompany: payload.AuthorCompany,
-		AuthorPhoto:   payload.AuthorPhoto,
-		Content:       payload.Content,
-		Context:       payload.Context,
-		VideoURL:      payload.VideoURL,
-		Type:          payload.Type,
-		Rating:        payload.Rating,
-		LinkedInURL:   payload.LinkedInURL,
-		DisplayOrder:  payload.DisplayOrder,
-		EntityLinks:   payload.EntityLinks,
-	})
+	testimonial, err := h.service.CreateTestimonial(c.Context(), userID, CreateTestimonialRequest(payload))
 	if err != nil {
 		return h.handleError(c, err)
 	}
@@ -211,21 +198,7 @@ func (h *handler) UpdateTestimonial(c *fiber.Ctx) error {
 		return response.Error(c, fiber.StatusBadRequest, ErrCodeInvalidPayload, nil)
 	}
 
-	testimonial, err := h.service.UpdateTestimonial(c.Context(), userID, testimonialID, UpdateTestimonialRequest{
-		AuthorName:    payload.AuthorName,
-		AuthorRole:    payload.AuthorRole,
-		AuthorCompany: payload.AuthorCompany,
-		AuthorPhoto:   payload.AuthorPhoto,
-		Content:       payload.Content,
-		Context:       payload.Context,
-		VideoURL:      payload.VideoURL,
-		Type:          payload.Type,
-		Rating:        payload.Rating,
-		LinkedInURL:   payload.LinkedInURL,
-		Status:        payload.Status,
-		DisplayOrder:  payload.DisplayOrder,
-		EntityLinks:   payload.EntityLinks,
-	})
+	testimonial, err := h.service.UpdateTestimonial(c.Context(), userID, testimonialID, UpdateTestimonialRequest(payload))
 	if err != nil {
 		return h.handleError(c, err)
 	}

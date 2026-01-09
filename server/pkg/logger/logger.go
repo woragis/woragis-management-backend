@@ -10,13 +10,12 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	apptracing "woragis-management-service/pkg/tracing"
 )
 
 const (
 	// ServiceName is the name of the service for structured logging
 	ServiceName = "woragis-management-service"
-	// TraceIDKey is the context key for trace ID
-	TraceIDKey = "trace_id"
 	// DefaultLogDir is the default directory for log files in development
 	DefaultLogDir = "logs"
 )
@@ -122,10 +121,8 @@ func (h *serviceHandler) Handle(ctx context.Context, r slog.Record) error {
 	r.AddAttrs(slog.String("service", h.service))
 
 	// Add trace_id from context if available
-	if traceID := ctx.Value(TraceIDKey); traceID != nil {
-		if id, ok := traceID.(string); ok && id != "" {
-			r.AddAttrs(slog.String("trace_id", id))
-		}
+	if id := apptracing.TraceIDFromContext(ctx); id != "" {
+		r.AddAttrs(slog.String("trace_id", id))
 	}
 
 	return h.Handler.Handle(ctx, r)
@@ -133,15 +130,12 @@ func (h *serviceHandler) Handle(ctx context.Context, r slog.Record) error {
 
 // WithTraceID adds a trace_id to the context for distributed tracing
 func WithTraceID(ctx context.Context, traceID string) context.Context {
-	return context.WithValue(ctx, TraceIDKey, traceID)
+	return apptracing.ContextWithTraceID(ctx, traceID)
 }
 
 // GetTraceID retrieves the trace_id from context
 func GetTraceID(ctx context.Context) string {
-	if traceID, ok := ctx.Value(TraceIDKey).(string); ok {
-		return traceID
-	}
-	return ""
+	return apptracing.TraceIDFromContext(ctx)
 }
 
 // LogError logs an error with stack trace and context information

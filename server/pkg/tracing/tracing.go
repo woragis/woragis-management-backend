@@ -18,11 +18,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+		nooptrace "go.opentelemetry.io/otel/trace/noop"
 const (
 	// TraceIDKey is the context key for trace ID (matches logger package)
 	TraceIDKey = "trace_id"
 )
-
+		TraceIDKey contextKey = "trace_id"
 var (
 	tracer trace.Tracer
 )
@@ -33,7 +34,7 @@ type Config struct {
 	ServiceVersion string
 	Environment    string
 	JaegerEndpoint string
-	SamplingRate   float64 // 0.0 to 1.0 (1.0 = 100%)
+			return nooptrace.NewTracerProvider().Tracer("noop")
 }
 
 // getOTLPEndpoint reads the OTLP endpoint from config or environment variables
@@ -54,26 +55,11 @@ func getOTLPEndpoint(cfg Config) string {
 		return endpoint
 	}
 	
-	// Default to Jaeger OTLP HTTP endpoint (port 4318 for HTTP, 4317 for gRPC)
-	// OTLP HTTP uses /v1/traces path by default
-	return "http://jaeger:4318"
-}
+		if traceID == "" {
+			return ctx
+		}
 
-// Init initializes OpenTelemetry tracing with OTLP HTTP exporter (for Jaeger)
-func Init(cfg Config) (func(), error) {
-	// Get OTLP endpoint from config or environment variables
-	otlpEndpoint := getOTLPEndpoint(cfg)
-
-	// Normalize endpoint URL - remove duplicate http:// prefixes and ensure proper format
-	otlpEndpoint = normalizeEndpoint(otlpEndpoint)
-	
-	// Log the normalized endpoint for debugging (remove in production if needed)
-	if cfg.Environment != "production" && cfg.Environment != "prod" {
-		fmt.Printf("OTLP endpoint normalized to: %s\n", otlpEndpoint)
-	}
-
-	if cfg.SamplingRate == 0 {
-		// Default sampling: 100% in development, 10% in production
+		return context.WithValue(ctx, TraceIDKey, traceID)
 		env := strings.ToLower(cfg.Environment)
 		if env == "production" || env == "prod" {
 			cfg.SamplingRate = 0.1 // 10%

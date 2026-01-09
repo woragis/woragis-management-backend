@@ -1257,53 +1257,6 @@ func (s *service) buildKanbanBoard(ctx context.Context, projectID uuid.UUID, use
 	return board, nil
 }
 
-func insertColumn(columns []KanbanColumn, position int) []KanbanColumn {
-	if position >= len(columns)-1 {
-		return columns
-	}
-
-	inserted := make([]KanbanColumn, 0, len(columns))
-	for idx, column := range columns {
-		if idx == len(columns)-1 {
-			continue
-		}
-		if idx == position {
-			inserted = append(inserted, columns[len(columns)-1])
-		}
-		inserted = append(inserted, column)
-	}
-	return append(inserted, columns[len(columns)-1])
-}
-
-func insertCard(cards []KanbanCard, position int) []KanbanCard {
-	if position >= len(cards)-1 {
-		return cards
-	}
-	for i := len(cards) - 1; i > position; i-- {
-		cards[i] = cards[i-1]
-	}
-	return cards
-}
-
-func removeCard(cards []KanbanCard, cardID uuid.UUID) []KanbanCard {
-	filtered := cards[:0]
-	for _, card := range cards {
-		if card.ID != cardID {
-			filtered = append(filtered, card)
-		}
-	}
-	return filtered
-}
-
-func (b KanbanBoard) findColumnIndex(columnID uuid.UUID) int {
-	for idx, column := range b.Columns {
-		if column.Column.ID == columnID {
-			return idx
-		}
-	}
-	return -1
-}
-
 // Documentation operations
 
 func (s *service) CreateDocumentation(ctx context.Context, req CreateDocumentationRequest) (*ProjectDocumentation, error) {
@@ -1446,7 +1399,9 @@ func (s *service) UpdateDocumentationSection(ctx context.Context, req UpdateDocu
 	doc, err := s.repo.GetDocumentationByProjectID(ctx, section.DocumentationID)
 	if err == nil {
 		doc.IncrementVersion()
-		s.repo.UpdateDocumentation(ctx, doc)
+		if err := s.repo.UpdateDocumentation(ctx, doc); err != nil {
+			return nil, err
+		}
 	}
 
 	return section, nil
@@ -1465,7 +1420,9 @@ func (s *service) DeleteDocumentationSection(ctx context.Context, req DeleteDocu
 	doc, err := s.repo.GetDocumentationByProjectID(ctx, section.DocumentationID)
 	if err == nil {
 		doc.IncrementVersion()
-		s.repo.UpdateDocumentation(ctx, doc)
+		if err := s.repo.UpdateDocumentation(ctx, doc); err != nil {
+			return err
+		}
 	}
 
 	return nil

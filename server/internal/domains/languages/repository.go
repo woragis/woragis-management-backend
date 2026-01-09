@@ -130,12 +130,7 @@ func (r *gormRepository) AggregateSummary(ctx context.Context, userID uuid.UUID)
 
 	summaries := make([]LanguageSummary, 0, len(rows))
 	for _, r := range rows {
-		summaries = append(summaries, LanguageSummary{
-			LanguageCode:    r.LanguageCode,
-			TotalMinutes:    r.TotalMinutes,
-			SessionCount:    r.SessionCount,
-			VocabularyCount: r.VocabularyCount,
-		})
+		summaries = append(summaries, LanguageSummary(r))
 	}
 
 	return summaries, nil

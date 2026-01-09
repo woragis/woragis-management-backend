@@ -17,16 +17,6 @@ import (
 	// skillsdomain, casestudiesdomain, technicalwritingsdomain, postsdomain, problemsolutionsdomain
 )
 
-// Stub interfaces for domains not yet implemented or implemented in other services
-type jobapplicationsdomain interface{}
-type jobwebsitesdomain interface{}
-type resumesdomain interface{}
-type skillsdomain interface{}
-type casestudiesdomain interface{}
-type technicalwritingsdomain interface{}
-type postsdomain interface{}
-type problemsolutionsdomain interface{}
-
 // ContextBuilder builds context for chat conversations.
 type ContextBuilder struct {
 	jobApplicationService   interface{} // Placeholder for job applications service (from jobs service)

@@ -20,8 +20,6 @@ type Service struct {
 	repo            Repository
 	reports         interface{} // Placeholder for reports service
 	logger          *slog.Logger
-	defaultEmail    bool
-	defaultWhatsApp bool
 }
 
 // NewService constructs a Service.

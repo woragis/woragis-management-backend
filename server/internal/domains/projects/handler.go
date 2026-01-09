@@ -409,7 +409,7 @@ func (h *handler) ListProjects(c *fiber.Ctx) error {
 	if h.enricher != nil {
 		// TODO: Implement translation enrichment
 		// language := "en" // Default language
-		for _ = range projects {
+		for range projects {
 			// fieldMap := map[string]*string{
 			// 	"name":        &projects[i].Name,
 			// 	"description": &projects[i].Description,
@@ -505,7 +505,7 @@ func (h *handler) SearchProjectsBySlug(c *fiber.Ctx) error {
 	if h.enricher != nil {
 		// TODO: Implement translation enrichment
 		// language := "en" // Default language
-		for _ = range projects {
+		for range projects {
 			// fieldMap := map[string]*string{
 			// 	"name":        &projects[i].Name,
 			// 	"description": &projects[i].Description,

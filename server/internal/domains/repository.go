@@ -87,9 +87,8 @@ func (r *repositoryImpl) createUser(user *User) error {
 func (r *repositoryImpl) getUserByID(id uuid.UUID) (*User, error) {
 	ctx := context.Background()
 	var user User
-	var err error
 	
-	err = apptracing.WithDatabaseSpan(ctx, "select", "users", func() error {
+	err := apptracing.WithDatabaseSpan(ctx, "select", "users", func() error {
 		start := time.Now()
 		err := r.db.Preload("Profile").First(&user, "id = ?", id).Error
 		duration := time.Since(start).Seconds()
@@ -115,9 +114,8 @@ func (r *repositoryImpl) getUserByID(id uuid.UUID) (*User, error) {
 func (r *repositoryImpl) getUserByEmail(email string) (*User, error) {
 	ctx := context.Background()
 	var user User
-	var err error
 	
-	err = apptracing.WithDatabaseSpan(ctx, "select", "users", func() error {
+	err := apptracing.WithDatabaseSpan(ctx, "select", "users", func() error {
 		start := time.Now()
 		err := r.db.Preload("Profile").First(&user, "email = ?", email).Error
 		duration := time.Since(start).Seconds()
@@ -143,9 +141,8 @@ func (r *repositoryImpl) getUserByEmail(email string) (*User, error) {
 func (r *repositoryImpl) getUserByUsername(username string) (*User, error) {
 	ctx := context.Background()
 	var user User
-	var err error
 	
-	err = apptracing.WithDatabaseSpan(ctx, "select", "users", func() error {
+	err := apptracing.WithDatabaseSpan(ctx, "select", "users", func() error {
 		start := time.Now()
 		err := r.db.Preload("Profile").First(&user, "username = ?", username).Error
 		duration := time.Since(start).Seconds()

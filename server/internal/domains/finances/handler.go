@@ -445,12 +445,7 @@ func (h *handler) Summary(c *fiber.Ctx) error {
 		return h.handleError(c, err)
 	}
 
-	return response.Success(c, fiber.StatusOK, summaryResponse{
-		IncomeTotal:       summary.IncomeTotal,
-		ExpenseTotal:      summary.ExpenseTotal,
-		SavingsAllocation: summary.SavingsAllocation,
-		BaseCurrency:      summary.BaseCurrency,
-	})
+	return response.Success(c, fiber.StatusOK, summaryResponse(summary))
 }
 
 // CreateTemplate handles POST /finance/templates

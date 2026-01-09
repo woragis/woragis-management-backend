@@ -343,15 +343,7 @@ func (s *service) GetExperience(ctx context.Context, experienceID uuid.UUID) (*E
 }
 
 func (s *service) ListExperiences(ctx context.Context, filters ListExperiencesFilters) ([]ExperienceWithDetails, error) {
-	repoFilters := ExperienceFilters{
-		UserID:    filters.UserID,
-		Type:      filters.Type,
-		IsCurrent: filters.IsCurrent,
-		Limit:     filters.Limit,
-		Offset:    filters.Offset,
-		OrderBy:   filters.OrderBy,
-		Order:     filters.Order,
-	}
+	repoFilters := ExperienceFilters(filters)
 
 	experiences, err := s.repo.ListExperiences(ctx, repoFilters)
 	if err != nil {

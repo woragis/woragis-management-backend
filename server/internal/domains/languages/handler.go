@@ -275,12 +275,7 @@ func (h *Handler) GetSummary(c *fiber.Ctx) error {
 
 	resp := make([]summaryResponse, 0, len(summary))
 	for _, s := range summary {
-		resp = append(resp, summaryResponse{
-			LanguageCode:    s.LanguageCode,
-			TotalMinutes:    s.TotalMinutes,
-			SessionCount:    s.SessionCount,
-			VocabularyCount: s.VocabularyCount,
-		})
+		resp = append(resp, summaryResponse(s))
 	}
 
 	return response.Success(c, fiber.StatusOK, resp)
