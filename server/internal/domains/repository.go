@@ -312,9 +312,8 @@ func (r *repositoryImpl) createProfile(profile *Profile) error {
 func (r *repositoryImpl) getProfileByUserID(userID uuid.UUID) (*Profile, error) {
 	ctx := context.Background()
 	var profile Profile
-	var err error
 	
-	err = apptracing.WithDatabaseSpan(ctx, "select", "profiles", func() error {
+	err := apptracing.WithDatabaseSpan(ctx, "select", "profiles", func() error {
 		start := time.Now()
 		err := r.db.Preload("User").First(&profile, "user_id = ?", userID).Error
 		duration := time.Since(start).Seconds()
@@ -393,9 +392,8 @@ func (r *repositoryImpl) createSession(session *Session) error {
 func (r *repositoryImpl) getSessionByRefreshToken(refreshToken string) (*Session, error) {
 	ctx := context.Background()
 	var session Session
-	var err error
 	
-	err = apptracing.WithDatabaseSpan(ctx, "select", "sessions", func() error {
+	err := apptracing.WithDatabaseSpan(ctx, "select", "sessions", func() error {
 		start := time.Now()
 		err := r.db.Preload("User").First(&session, "refresh_token = ? AND is_active = ?", refreshToken, true).Error
 		duration := time.Since(start).Seconds()
@@ -421,9 +419,8 @@ func (r *repositoryImpl) getSessionByRefreshToken(refreshToken string) (*Session
 func (r *repositoryImpl) getSessionsByUserID(userID uuid.UUID) ([]Session, error) {
 	ctx := context.Background()
 	var sessions []Session
-	var err error
 	
-	err = apptracing.WithDatabaseSpan(ctx, "select", "sessions", func() error {
+	err := apptracing.WithDatabaseSpan(ctx, "select", "sessions", func() error {
 		start := time.Now()
 		err := r.db.Where("user_id = ? AND is_active = ?", userID, true).Find(&sessions).Error
 		duration := time.Since(start).Seconds()
