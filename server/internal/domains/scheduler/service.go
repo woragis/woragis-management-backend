@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/teambition/rrule-go"
 	"gorm.io/datatypes"
-
 	// TODO: reports domain needs to be implemented
 	// reportsdomain "woragis-management-service/internal/domains/reports"
 )
