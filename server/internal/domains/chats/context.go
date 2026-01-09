@@ -8,16 +8,19 @@ import (
 
 	"github.com/google/uuid"
 
-	jobapplicationsdomain "woragis-management-service/internal/domains/jobapplications"
 	projectsdomain "woragis-management-service/internal/domains/projects"
-	resumesdomain "woragis-management-service/internal/domains/resumes"
 	userprofilesdomain "woragis-management-service/internal/domains/userprofiles"
 	experiencesdomain "woragis-management-service/internal/domains/experiences"
+	// Note: The following domains are implemented in the jobs service
+	// jobapplicationsdomain, jobwebsitesdomain, resumesdomain
 	// Note: The following domains are not yet implemented in this service
 	// skillsdomain, casestudiesdomain, technicalwritingsdomain, postsdomain, problemsolutionsdomain
 )
 
-// Stub interfaces for domains not yet implemented
+// Stub interfaces for domains not yet implemented or implemented in other services
+type jobapplicationsdomain interface{}
+type jobwebsitesdomain interface{}
+type resumesdomain interface{}
 type skillsdomain interface{}
 type casestudiesdomain interface{}
 type technicalwritingsdomain interface{}
@@ -26,23 +29,23 @@ type problemsolutionsdomain interface{}
 
 // ContextBuilder builds context for chat conversations.
 type ContextBuilder struct {
-	jobApplicationService jobapplicationsdomain.Service
-	resumeService         resumesdomain.Service
-	userProfileService    userprofilesdomain.Service
-	projectService        projectsdomain.Service
-	skillService          interface{} // Placeholder for skills service
-	caseStudyService      interface{} // Placeholder for case studies service
+	jobApplicationService   interface{} // Placeholder for job applications service (from jobs service)
+	resumeService           interface{} // Placeholder for resumes service (from jobs service)
+	userProfileService      userprofilesdomain.Service
+	projectService          projectsdomain.Service
+	skillService            interface{} // Placeholder for skills service
+	caseStudyService        interface{} // Placeholder for case studies service
 	technicalWritingService interface{} // Placeholder for technical writings service
-	postService           interface{} // Placeholder for posts service
-	problemSolutionService interface{} // Placeholder for problem solutions service
-	experienceService     experiencesdomain.Service
-	logger                *slog.Logger
+	postService             interface{} // Placeholder for posts service
+	problemSolutionService  interface{} // Placeholder for problem solutions service
+	experienceService       experiencesdomain.Service
+	logger                  *slog.Logger
 }
 
 // NewContextBuilder creates a new context builder.
 func NewContextBuilder(
-	jobApplicationService jobapplicationsdomain.Service,
-	resumeService resumesdomain.Service,
+	jobApplicationService interface{}, // Placeholder for job applications service (from jobs service)
+	resumeService interface{}, // Placeholder for resumes service (from jobs service)
 	userProfileService userprofilesdomain.Service,
 	projectService projectsdomain.Service,
 	skillService interface{}, // Placeholder for skills service
@@ -54,17 +57,17 @@ func NewContextBuilder(
 	logger *slog.Logger,
 ) *ContextBuilder {
 	return &ContextBuilder{
-		jobApplicationService:  jobApplicationService,
-		resumeService:          resumeService,
-		userProfileService:     userProfileService,
-		projectService:         projectService,
-		skillService:           skillService,
-		caseStudyService:       caseStudyService,
+		jobApplicationService:   jobApplicationService,
+		resumeService:           resumeService,
+		userProfileService:      userProfileService,
+		projectService:          projectService,
+		skillService:            skillService,
+		caseStudyService:        caseStudyService,
 		technicalWritingService: technicalWritingService,
-		postService:            postService,
-		problemSolutionService: problemSolutionService,
-		experienceService:     experienceService,
-		logger:                logger,
+		postService:             postService,
+		problemSolutionService:  problemSolutionService,
+		experienceService:       experienceService,
+		logger:                  logger,
 	}
 }
 
@@ -95,33 +98,19 @@ func (cb *ContextBuilder) BuildContext(ctx context.Context, userID uuid.UUID, co
 	}
 
 	// Job Application Context
+	// Note: Job applications and resumes are now managed in the jobs service
+	// TODO: Call jobs service API to fetch job application and resume data when needed
 	if options.IncludeJobApplication && conv.JobApplicationID != nil {
-		app, err := cb.jobApplicationService.GetJobApplication(ctx, *conv.JobApplicationID)
-		if err == nil && app != nil {
-			parts = append(parts, fmt.Sprintf("## Job Application Context\n"))
-			parts = append(parts, fmt.Sprintf("**Company:** %s\n", app.CompanyName))
-			parts = append(parts, fmt.Sprintf("**Job Title:** %s\n", app.JobTitle))
-			parts = append(parts, fmt.Sprintf("**Location:** %s\n", app.Location))
-			parts = append(parts, fmt.Sprintf("**Status:** %s\n", app.Status))
-			if app.JobDescription != "" {
-				parts = append(parts, fmt.Sprintf("**Job Description:**\n%s\n", app.JobDescription))
-			}
-			if app.Notes != "" {
-				parts = append(parts, fmt.Sprintf("**Notes:** %s\n", app.Notes))
-			}
-			parts = append(parts, "\n")
-		}
+		// Job application context would be retrieved from the jobs service
+		_ = cb.jobApplicationService
+		parts = append(parts, "## Job Application Context\n(Job application context from jobs service would be included here)\n\n")
+	}
 
-		// Resume Context (if linked to job application)
-		if options.IncludeResume && app != nil && app.ResumeID != nil {
-			resume, err := cb.resumeService.GetResume(ctx, userID, *app.ResumeID)
-			if err == nil && resume != nil {
-				parts = append(parts, fmt.Sprintf("## Resume Information\n"))
-				parts = append(parts, fmt.Sprintf("**Title:** %s\n", resume.Title))
-				parts = append(parts, fmt.Sprintf("**File:** %s (%d bytes)\n", resume.FileName, resume.FileSize))
-				parts = append(parts, "\n")
-			}
-		}
+	// Resume Context
+	if options.IncludeResume {
+		// Resume context would be retrieved from the jobs service
+		_ = cb.resumeService
+		parts = append(parts, "## Resume Information\n(Resume information from jobs service would be included here)\n\n")
 	}
 
 	// Projects

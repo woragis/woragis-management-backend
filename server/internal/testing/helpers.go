@@ -11,7 +11,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"woragis-jobs-service/pkg/auth"
+	"woragis-management-service/pkg/auth"
 )
 
 // TestConfig holds test configuration
@@ -24,7 +24,7 @@ type TestConfig struct {
 // LoadTestConfig loads test configuration from environment
 func LoadTestConfig() *TestConfig {
 	return &TestConfig{
-		DatabaseURL: getEnv("TEST_DATABASE_URL", "postgres://postgres:postgres@localhost:5432/auth_service_test?sslmode=disable"),
+		DatabaseURL: getEnv("TEST_DATABASE_URL", "postgres://postgres:postgres@localhost:5432/management_service_test?sslmode=disable"),
 		RedisURL:    getEnv("TEST_REDIS_URL", "redis://localhost:6379/0"),
 		JWTSecret:   getEnv("TEST_JWT_SECRET", "test-secret-key-for-integration-tests"),
 	}
@@ -73,7 +73,7 @@ func SetupTestRedis(url string) (*redis.Client, error) {
 func SetupTestJWTManager(secret string, redisClient *redis.Client) *auth.JWTManager {
 	jwtManager := auth.NewJWTManager(
 		secret,
-		"woragis-jobs-service-test",
+		"woragis-management-service-test",
 		1*time.Hour,  // Access token expiry
 		24*time.Hour, // Refresh token expiry
 	)

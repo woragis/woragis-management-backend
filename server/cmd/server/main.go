@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gofiber/adaptor/v2"
+	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -17,10 +18,10 @@ import (
 	"woragis-management-service/pkg/health"
 	applogger "woragis-management-service/pkg/logger"
 	appmetrics "woragis-management-service/pkg/metrics"
-	apptracing "woragis-management-service/pkg/tracing"
 	appsecurity "woragis-management-service/pkg/security"
 	apptimeout "woragis-management-service/pkg/timeout"
-	
+	apptracing "woragis-management-service/pkg/tracing"
+
 	managementdomain "woragis-management-service/internal/domains"
 )
 
@@ -90,6 +91,15 @@ func main() {
 	// Security headers middleware (must be early, before other middlewares)
 	app.Use(appsecurity.SecurityHeadersMiddleware())
 
+	// CORS middleware (if enabled) - must be early to handle preflight requests
+	corsCfg := config.LoadCORSConfig()
+	if corsCfg.Enabled {
+		slogLogger.Info("CORS enabled", "allowed_origins", corsCfg.AllowedOrigins, "allowed_methods", corsCfg.AllowedMethods, "allow_credentials", corsCfg.AllowCredentials)
+		config.SetupCORS(app, corsCfg)
+	} else {
+		slogLogger.Info("CORS disabled")
+	}
+
 	// Request timeout middleware (30 seconds default)
 	app.Use(apptimeout.Middleware(apptimeout.DefaultConfig()))
 
@@ -109,17 +119,13 @@ func main() {
 	app.Use(appsecurity.InputSanitizationMiddleware())
 
 	// CSRF protection (for state-changing requests)
-	csrfCfg := appsecurity.DefaultCSRFConfig(dbManager.GetRedis())
+	// Secure cookie should be false in development (HTTP) and true in production (HTTPS)
+	secureCookie := env == "production"
+	csrfCfg := appsecurity.DefaultCSRFConfig(dbManager.GetRedis(), secureCookie)
 	app.Use(appsecurity.CSRFMiddleware(csrfCfg))
 
 	// Rate limiting (100 requests per minute per IP/user)
 	app.Use(appsecurity.RateLimitMiddleware(100, time.Minute))
-
-	// CORS middleware (if enabled)
-	corsCfg := config.LoadCORSConfig()
-	if corsCfg.Enabled {
-		config.SetupCORS(app, corsCfg)
-	}
 
 	// Initialize health checker
 	healthChecker := health.NewHealthChecker(dbManager.GetPostgres(), dbManager.GetRedis(), slogLogger)
@@ -134,6 +140,16 @@ func main() {
 
 	// API routes group
 	api := app.Group("/api/v1")
+
+	// CSRF token endpoint (GET request - middleware will generate token automatically)
+	api.Get("/csrf-token", func(c *fiber.Ctx) error {
+		// Token is already set in header by CSRF middleware
+		// Just return a simple success response
+		return c.JSON(fiber.Map{
+			"success": true,
+			"message": "CSRF token available in X-CSRF-Token header",
+		})
+	})
 
 	// Load auth service URL for JWT validation
 	authServiceURL := os.Getenv("AUTH_SERVICE_URL")

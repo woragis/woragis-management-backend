@@ -30,6 +30,8 @@ type CSRFConfig struct {
 	CookieName string
 	// HeaderName is the name of the header to read CSRF token (default: "X-CSRF-Token")
 	HeaderName string
+	// SecureCookie determines if the cookie should only be sent over HTTPS (default: true in production)
+	SecureCookie bool
 	// ExemptRoutes is a list of routes that don't require CSRF protection
 	ExemptRoutes []string
 	// ExemptMethods is a list of HTTP methods that don't require CSRF protection
@@ -37,13 +39,15 @@ type CSRFConfig struct {
 }
 
 // DefaultCSRFConfig returns default CSRF configuration
-func DefaultCSRFConfig(redisClient *redis.Client) CSRFConfig {
+// secureCookie should be false in development (HTTP) and true in production (HTTPS)
+func DefaultCSRFConfig(redisClient *redis.Client, secureCookie bool) CSRFConfig {
 	return CSRFConfig{
 		RedisClient:  redisClient,
 		TokenLength:  32,
 		TokenTTL:     1 * time.Hour,
 		CookieName:   "csrf_token",
 		HeaderName:   "X-CSRF-Token",
+		SecureCookie: secureCookie,
 		ExemptRoutes: []string{"/healthz", "/metrics", "/api/v1/auth/login", "/api/v1/auth/register"},
 		ExemptMethods: []string{"GET", "HEAD", "OPTIONS"},
 	}
@@ -110,7 +114,7 @@ func CSRFMiddleware(config CSRFConfig) fiber.Handler {
 				Name:     config.CookieName,
 				Value:    token,
 				HTTPOnly: false, // Must be readable by JavaScript for API clients
-				Secure:   true,  // Only send over HTTPS in production
+				Secure:   config.SecureCookie, // Configurable based on environment
 				SameSite: "Strict",
 				MaxAge:   int(config.TokenTTL.Seconds()),
 			})
