@@ -530,9 +530,8 @@ func (r *repositoryImpl) createVerificationToken(token *VerificationToken) error
 func (r *repositoryImpl) getVerificationToken(token string) (*VerificationToken, error) {
 	ctx := context.Background()
 	var verificationToken VerificationToken
-	var err error
-	
-	err = apptracing.WithDatabaseSpan(ctx, "select", "verification_tokens", func() error {
+
+	err := apptracing.WithDatabaseSpan(ctx, "select", "verification_tokens", func() error {
 		start := time.Now()
 		err := r.db.Preload("User").First(&verificationToken, "token = ?", token).Error
 		duration := time.Since(start).Seconds()
