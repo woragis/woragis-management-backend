@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 
-	authPkg "woragis-jobs-service/pkg/auth"
+	authPkg "woragis-management-service/pkg/auth"
 )
 
 func BenchmarkService_Register(b *testing.B) {

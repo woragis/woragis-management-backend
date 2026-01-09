@@ -8,9 +8,9 @@ import (
 
 	"github.com/google/uuid"
 
+	experiencesdomain "woragis-management-service/internal/domains/experiences"
 	projectsdomain "woragis-management-service/internal/domains/projects"
 	userprofilesdomain "woragis-management-service/internal/domains/userprofiles"
-	experiencesdomain "woragis-management-service/internal/domains/experiences"
 	// Note: The following domains are implemented in the jobs service
 	// jobapplicationsdomain, jobwebsitesdomain, resumesdomain
 	// Note: The following domains are not yet implemented in this service
