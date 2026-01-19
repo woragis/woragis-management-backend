@@ -46,19 +46,19 @@ func (c *Client) ValidateToken(token string) (*ValidateTokenResponse, error) {
 	reqBody := ValidateTokenRequest{Token: token}
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return &ValidateTokenResponse{Valid: false, Message: err.Error()}, nil
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return &ValidateTokenResponse{Valid: false, Message: err.Error()}, nil
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
+		return &ValidateTokenResponse{Valid: false, Message: err.Error()}, nil
 	}
 	defer resp.Body.Close()
 

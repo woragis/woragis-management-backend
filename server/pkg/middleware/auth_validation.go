@@ -58,7 +58,7 @@ func AuthValidationMiddleware(config AuthValidationConfig) fiber.Handler {
 		// Validate token with Auth Service
 		response, err := config.AuthServiceClient.ValidateToken(token)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(utils.ErrorResponse{
+			return c.Status(fiber.StatusUnauthorized).JSON(utils.ErrorResponse{
 				Success: false,
 				Message: "failed to validate token",
 			})
