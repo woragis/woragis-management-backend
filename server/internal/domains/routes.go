@@ -6,20 +6,21 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 
-	"woragis-management-service/internal/domains/projects"
-	"woragis-management-service/internal/domains/ideas"
+	"woragis-management-service/internal/domains/apikeys"
 	"woragis-management-service/internal/domains/chats"
 	"woragis-management-service/internal/domains/clients"
-	"woragis-management-service/internal/domains/finances"
+	"woragis-management-service/internal/domains/csrf"
 	"woragis-management-service/internal/domains/experiences"
-	"woragis-management-service/internal/domains/userpreferences"
-	"woragis-management-service/internal/domains/userprofiles"
-	"woragis-management-service/internal/domains/apikeys"
+	"woragis-management-service/internal/domains/finances"
+	"woragis-management-service/internal/domains/ideas"
 	"woragis-management-service/internal/domains/languages"
+	"woragis-management-service/internal/domains/projects"
 	"woragis-management-service/internal/domains/scheduler"
 	"woragis-management-service/internal/domains/testimonials"
-	"woragis-management-service/pkg/authservice"
+	"woragis-management-service/internal/domains/userpreferences"
+	"woragis-management-service/internal/domains/userprofiles"
 	"woragis-management-service/pkg/aiservice"
+	"woragis-management-service/pkg/authservice"
 	"woragis-management-service/pkg/middleware"
 )
 
@@ -33,6 +34,10 @@ func SetupRoutes(api fiber.Router, db *gorm.DB, authServiceURL, aiServiceURL str
 	if aiServiceURL != "" {
 		aiClient = aiservice.NewClient(aiServiceURL)
 	}
+
+	// Setup CSRF routes before auth middleware
+	csrfHandler := csrf.NewHandler(logger)
+	csrf.SetupRoutes(api.Group("/csrf-token"), csrfHandler)
 
 	// Apply auth validation middleware to all routes
 	api.Use(middleware.AuthValidationMiddleware(middleware.DefaultAuthValidationConfig(authClient)))

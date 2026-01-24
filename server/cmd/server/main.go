@@ -382,8 +382,13 @@ func main() {
 	// Input sanitization
 	app.Use(appsecurity.InputSanitizationMiddleware())
 
-	// CSRF protection (for state-changing requests)
+	// CSRF protection (for state-changing requests) - DISABLED FOR TESTING
 	// Secure cookie should be false in development (HTTP) and true in production (HTTPS)
+	// secureCookie := env == "production"
+	// csrfCfg := appsecurity.DefaultCSRFConfig(dbManager.GetRedis(), secureCookie)
+	// app.Use(appsecurity.CSRFMiddleware(csrfCfg))
+
+	// Enable CSRF protection so `/api/v1/csrf-token` returns the header.
 	secureCookie := env == "production"
 	csrfCfg := appsecurity.DefaultCSRFConfig(dbManager.GetRedis(), secureCookie)
 	app.Use(appsecurity.CSRFMiddleware(csrfCfg))
@@ -418,7 +423,13 @@ func main() {
 	// Load auth service URL for JWT validation
 	authServiceURL := os.Getenv("AUTH_SERVICE_URL")
 	if authServiceURL == "" {
-		authServiceURL = "http://auth-service:3000"
+		// Prefer localhost when running in development on the host machine
+		if env == "development" || env == "dev" {
+			authServiceURL = "http://localhost:3000"
+		} else {
+			// In Docker Compose the auth service is named `auth-backend`
+			authServiceURL = "http://auth-backend:3000"
+		}
 	}
 
 	// Load AI service URL

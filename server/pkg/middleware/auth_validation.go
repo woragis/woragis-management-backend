@@ -3,9 +3,11 @@ package middleware
 import (
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
 	"woragis-management-service/pkg/authservice"
 	"woragis-management-service/pkg/utils"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 // AuthValidationConfig holds configuration for auth validation middleware
@@ -72,8 +74,14 @@ func AuthValidationMiddleware(config AuthValidationConfig) fiber.Handler {
 		}
 
 		// Store user info in context
-		c.Locals("userID", response.UserID)
-		c.Locals("userEmail", response.Email)
+	userID, err := uuid.Parse(response.UserID)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(utils.ErrorResponse{
+			Success: false,
+			Message: "invalid user ID format",
+		})
+	}
+	c.Locals("userID", userID)
 		c.Locals("userRole", response.Role)
 
 		return c.Next()

@@ -7,7 +7,7 @@ type RedisConfig struct {
 	DB       int
 }
 
-const defaultRedisDB = 0
+const defaultRedisDB = 3
 
 // LoadRedisConfig reads Redis configuration from the environment
 func LoadRedisConfig() *RedisConfig {

@@ -42,6 +42,7 @@ func NewHandler(service Service, logger *slog.Logger) Handler {
 type createExperiencePayload struct {
 	Company      string          `json:"company"`
 	Position     string          `json:"position"`
+	Role         string          `json:"role,omitempty"`
 	PeriodStart  *time.Time      `json:"periodStart,omitempty"`
 	PeriodEnd    *time.Time      `json:"periodEnd,omitempty"`
 	PeriodText   string          `json:"periodText,omitempty"`
@@ -90,7 +91,31 @@ func (h *handler) CreateExperience(c *fiber.Ctx) error {
 		return response.Error(c, fiber.StatusBadRequest, ErrCodeInvalidPayload, nil)
 	}
 
-	experience, err := h.service.CreateExperience(c.Context(), userID, CreateExperienceRequest(payload))
+	// Accept legacy/alternate `role` field used by some clients (curl runner)
+	if payload.Position == "" && payload.Role != "" {
+		payload.Position = payload.Role
+	}
+
+	// Map incoming payload to service request explicitly (avoid direct type conversion)
+	req := CreateExperienceRequest{
+		Company:      payload.Company,
+		Position:     payload.Position,
+		PeriodStart:  payload.PeriodStart,
+		PeriodEnd:    payload.PeriodEnd,
+		PeriodText:   payload.PeriodText,
+		Location:     payload.Location,
+		Description:  payload.Description,
+		Type:         payload.Type,
+		CompanyURL:   payload.CompanyURL,
+		LinkedInURL:  payload.LinkedInURL,
+		DisplayOrder: payload.DisplayOrder,
+		IsCurrent:    payload.IsCurrent,
+		Technologies: payload.Technologies,
+		Projects:     payload.Projects,
+		Achievements: payload.Achievements,
+	}
+
+	experience, err := h.service.CreateExperience(c.Context(), userID, req)
 	if err != nil {
 		return h.handleError(c, err)
 	}

@@ -48,8 +48,9 @@ func DefaultCSRFConfig(redisClient *redis.Client, secureCookie bool) CSRFConfig 
 		CookieName:   "csrf_token",
 		HeaderName:   "X-CSRF-Token",
 		SecureCookie: secureCookie,
+		// Keep auth login/register and health endpoints exempt; do not exempt domain endpoints by default
 		ExemptRoutes: []string{"/healthz", "/metrics", "/api/v1/auth/login", "/api/v1/auth/register"},
-		ExemptMethods: []string{"GET", "HEAD", "OPTIONS"},
+		ExemptMethods: []string{"HEAD", "OPTIONS"},
 	}
 }
 
@@ -96,15 +97,13 @@ func CSRFMiddleware(config CSRFConfig) fiber.Handler {
 				})
 			}
 
-			// Store token in Redis
+			// Store token in Redis with token-specific key and TTL
 			if config.RedisClient != nil {
 				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 				defer cancel()
 
-				// Use session ID or IP address as key
-				sessionKey := fmt.Sprintf("csrf:%s", c.IP())
-				if err := config.RedisClient.Set(ctx, sessionKey, token, config.TokenTTL).Err(); err != nil {
-					// Log error but continue (graceful degradation)
+				sessionKey := fmt.Sprintf("csrf:token:%s", token)
+				if err := config.RedisClient.Set(ctx, sessionKey, "valid", config.TokenTTL).Err(); err != nil {
 					c.Locals("csrf_error", "Failed to store CSRF token")
 				}
 			}
@@ -115,8 +114,9 @@ func CSRFMiddleware(config CSRFConfig) fiber.Handler {
 				Value:    token,
 				HTTPOnly: false, // Must be readable by JavaScript for API clients
 				Secure:   config.SecureCookie, // Configurable based on environment
-				SameSite: "Strict",
+				SameSite: "Lax",
 				MaxAge:   int(config.TokenTTL.Seconds()),
+				Path:     "/",
 			})
 
 			// Also set in response header for API clients
@@ -138,27 +138,21 @@ func CSRFMiddleware(config CSRFConfig) fiber.Handler {
 			})
 		}
 
-		// Validate token in Redis
+		// Validate token in Redis (token-specific key)
 		if config.RedisClient != nil {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
 
-			sessionKey := fmt.Sprintf("csrf:%s", c.IP())
-			storedToken, err := config.RedisClient.Get(ctx, sessionKey).Result()
-			if err == redis.Nil {
-				return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-					"error": ErrCSRFTokenExpired.Error(),
-				})
-			}
+			sessionKey := fmt.Sprintf("csrf:token:%s", token)
+			exists, err := config.RedisClient.Exists(ctx, sessionKey).Result()
 			if err != nil {
 				// Redis error - log but allow request (graceful degradation)
 				c.Locals("csrf_warning", "CSRF token validation skipped due to Redis error")
 				return c.Next()
 			}
-
-			if storedToken != token {
+			if exists == 0 {
 				return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-					"error": ErrCSRFTokenInvalid.Error(),
+					"error": ErrCSRFTokenExpired.Error(),
 				})
 			}
 
