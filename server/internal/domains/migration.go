@@ -16,6 +16,7 @@ import (
 	"woragis-management-service/internal/domains/languages"
 	"woragis-management-service/internal/domains/scheduler"
 	"woragis-management-service/internal/domains/testimonials"
+    "woragis-management-service/internal/domains/certifications"
 )
 
 // MigrateManagementTables runs database migrations for all management-related domains
@@ -128,6 +129,13 @@ func MigrateManagementTables(db *gorm.DB) error {
 	// Migrate testimonials tables
 	if err := db.AutoMigrate(
 		&testimonials.Testimonial{},
+	); err != nil {
+		return err
+	}
+
+	// Migrate certifications table
+	if err := db.AutoMigrate(
+		&certifications.Certification{},
 	); err != nil {
 		return err
 	}

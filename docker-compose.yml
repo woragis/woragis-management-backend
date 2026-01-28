@@ -75,8 +75,8 @@ services:
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:3001}
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-dev-secret-change-me}
       AUTH_JWT_TTL: ${AUTH_JWT_TTL:-24h}
-      AES_KEY: ${AES_KEY:-}
-      HASH_SALT: ${HASH_SALT:-}
+      AES_KEY: ${AES_KEY:-test-aes-key}
+      HASH_SALT: ${HASH_SALT:-test-hash-salt}
       DATABASE_URL: postgres://${POSTGRES_USER:-woragis}:${POSTGRES_PASSWORD:-password}@woragis-management-database:5432/${POSTGRES_DB:-management_service}?sslmode=disable
       REDIS_URL: redis://woragis-management-redis:6379/0
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-woragis}:${RABBITMQ_PASSWORD:-woragis}@woragis-management-rabbitmq:5672/${RABBITMQ_VHOST:-/}
@@ -108,6 +108,48 @@ services:
     ports:
       - '${APP_PORT:-3001}:3000'
     restart: on-failure
+    networks:
+      - management-service-network
+      - woragis-network
+
+  # Auth database for auth-backend (not used by mock but available if needed)
+  woragis-auth-database:
+    image: postgres:15-alpine
+    container_name: woragis-auth-database
+    environment:
+      POSTGRES_DB: auth_service
+      POSTGRES_PASSWORD: ${AUTH_POSTGRES_PASSWORD:-password}
+      POSTGRES_USER: ${AUTH_POSTGRES_USER:-woragis}
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${AUTH_POSTGRES_USER:-woragis}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - '${AUTH_POSTGRES_PORT:-5434}:5432'
+    volumes:
+      - auth-postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - management-service-network
+
+  woragis-auth-backend:
+    build:
+      # Build the real auth backend from sibling repository
+      context: ../auth/server
+      dockerfile: Dockerfile
+    container_name: woragis-auth-backend
+    depends_on:
+      woragis-auth-database:
+        condition: service_healthy
+      woragis-management-redis:
+        condition: service_healthy
+    environment:
+      APP_PORT: 3000
+      DATABASE_URL: postgres://${AUTH_POSTGRES_USER:-woragis}:${AUTH_POSTGRES_PASSWORD:-password}@woragis-auth-database:5432/${POSTGRES_DB:-auth_service}?sslmode=disable
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
     networks:
       - management-service-network
       - woragis-network
@@ -367,6 +409,7 @@ volumes:
   postgres-data:
   redis-data:
   rabbitmq-data:
+  auth-postgres-data:
   grafana-data:
   loki-data:
   promtail-positions:

@@ -17,6 +17,7 @@ import (
 	"woragis-management-service/internal/domains/projects"
 	"woragis-management-service/internal/domains/scheduler"
 	"woragis-management-service/internal/domains/testimonials"
+    "woragis-management-service/internal/domains/certifications"
 	"woragis-management-service/internal/domains/userpreferences"
 	"woragis-management-service/internal/domains/userprofiles"
 	"woragis-management-service/pkg/aiservice"
@@ -97,4 +98,5 @@ func SetupRoutes(api fiber.Router, db *gorm.DB, authServiceURL, aiServiceURL str
 	languages.SetupRoutes(api.Group("/languages"), languageHandler)
 	scheduler.SetupRoutes(api.Group("/scheduler"), schedulerHandler)
 	testimonials.SetupRoutes(api.Group("/testimonials"), testimonialHandler)
+	certifications.SetupRoutes(api.Group("/certifications"), db, logger)
 }

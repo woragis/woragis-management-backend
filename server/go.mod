@@ -38,9 +38,9 @@ require (
 	github.com/glebarez/sqlite v1.11.0
 	github.com/gofiber/websocket/v2 v2.2.1
 	github.com/jackc/pgx/v5 v5.5.5
-	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/teambition/rrule-go v1.8.2
 	gorm.io/datatypes v1.2.7
+	gorm.io/driver/sqlite v1.4.3
 )
 
 require (
@@ -67,6 +67,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
+	github.com/mattn/go-sqlite3 v1.14.16 // indirect
 	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
