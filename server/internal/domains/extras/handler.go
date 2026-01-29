@@ -1,22 +1,22 @@
-package certifications
+package extras
 
 import (
-	"log/slog"
+    "log/slog"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
+    "github.com/gofiber/fiber/v2"
+    "github.com/google/uuid"
 
-	"woragis-management-service/pkg/middleware"
-	"woragis-management-service/pkg/response"
+    "woragis-management-service/pkg/middleware"
+    "woragis-management-service/pkg/response"
 )
 
-// Handler exposes certifications endpoints.
+// Handler exposes extras endpoints.
 type Handler interface {
-    CreateCertification(c *fiber.Ctx) error
-    UpdateCertification(c *fiber.Ctx) error
-    GetCertification(c *fiber.Ctx) error
-    ListCertifications(c *fiber.Ctx) error
-    DeleteCertification(c *fiber.Ctx) error
+    CreateExtra(c *fiber.Ctx) error
+    UpdateExtra(c *fiber.Ctx) error
+    GetExtra(c *fiber.Ctx) error
+    ListExtras(c *fiber.Ctx) error
+    DeleteExtra(c *fiber.Ctx) error
 }
 
 type handler struct{
@@ -24,91 +24,87 @@ type handler struct{
     logger  *slog.Logger
 }
 
-// NewHandler constructs a certifications handler.
+// NewHandler constructs an extras handler.
 func NewHandler(s Service, logger *slog.Logger) Handler {
     return &handler{service: s, logger: logger}
 }
 
-type createCertificationPayload struct{
-    Name string `json:"name"`
-    Issuer string `json:"issuer,omitempty"`
-    Date string `json:"date,omitempty"`
-    URL string `json:"url,omitempty"`
-    Description string `json:"description,omitempty"`
+type createExtraPayload struct{
+    Category string `json:"category,omitempty"`
+    Text     string `json:"text,omitempty"`
+    Ordinal  *int   `json:"ordinal,omitempty"`
 }
 
-type updateCertificationPayload struct{
-    Name *string `json:"name,omitempty"`
-    Issuer *string `json:"issuer,omitempty"`
-    Date *string `json:"date,omitempty"`
-    URL *string `json:"url,omitempty"`
-    Description *string `json:"description,omitempty"`
+type updateExtraPayload struct{
+    Category *string `json:"category,omitempty"`
+    Text     *string `json:"text,omitempty"`
+    Ordinal  *int    `json:"ordinal,omitempty"`
 }
 
-func (h *handler) CreateCertification(c *fiber.Ctx) error {
+func (h *handler) CreateExtra(c *fiber.Ctx) error {
     userID, err := middleware.GetUserIDFromFiberContext(c)
     if err != nil {
         return response.Error(c, fiber.StatusUnauthorized, ErrCodeInvalidPayload, fiber.Map{"message":"authentication required"})
     }
 
-    var payload createCertificationPayload
+    var payload createExtraPayload
     if err := c.BodyParser(&payload); err != nil {
         return response.Error(c, fiber.StatusBadRequest, ErrCodeInvalidPayload, nil)
     }
 
-    cert, err := h.service.CreateCertification(c.Context(), userID, CreateCertificationRequest(payload))
+    extra, err := h.service.CreateExtra(c.Context(), userID, CreateExtraRequest(payload))
     if err != nil {
         return h.handleError(c, err)
     }
 
-    return response.Success(c, fiber.StatusCreated, cert)
+    return response.Success(c, fiber.StatusCreated, extra)
 }
 
-func (h *handler) UpdateCertification(c *fiber.Ctx) error {
+func (h *handler) UpdateExtra(c *fiber.Ctx) error {
     userID, err := middleware.GetUserIDFromFiberContext(c)
     if err != nil {
         return response.Error(c, fiber.StatusUnauthorized, ErrCodeInvalidPayload, fiber.Map{"message":"authentication required"})
     }
 
-    certID, err := uuid.Parse(c.Params("id"))
+    extraID, err := uuid.Parse(c.Params("id"))
     if err != nil {
         return response.Error(c, fiber.StatusBadRequest, ErrCodeInvalidPayload, fiber.Map{"message":"invalid id"})
     }
 
-    var payload updateCertificationPayload
+    var payload updateExtraPayload
     if err := c.BodyParser(&payload); err != nil {
         return response.Error(c, fiber.StatusBadRequest, ErrCodeInvalidPayload, nil)
     }
 
-    cert, err := h.service.UpdateCertification(c.Context(), userID, certID, UpdateCertificationRequest(payload))
+    extra, err := h.service.UpdateExtra(c.Context(), userID, extraID, UpdateExtraRequest(payload))
     if err != nil {
         return h.handleError(c, err)
     }
 
-    return response.Success(c, fiber.StatusOK, cert)
+    return response.Success(c, fiber.StatusOK, extra)
 }
 
-func (h *handler) GetCertification(c *fiber.Ctx) error {
-    certID, err := uuid.Parse(c.Params("id"))
+func (h *handler) GetExtra(c *fiber.Ctx) error {
+    extraID, err := uuid.Parse(c.Params("id"))
     if err != nil {
         return response.Error(c, fiber.StatusBadRequest, ErrCodeInvalidPayload, fiber.Map{"message":"invalid id"})
     }
 
-    cert, err := h.service.GetCertification(c.Context(), certID)
+    extra, err := h.service.GetExtra(c.Context(), extraID)
     if err != nil {
         return h.handleError(c, err)
     }
 
-    return response.Success(c, fiber.StatusOK, cert)
+    return response.Success(c, fiber.StatusOK, extra)
 }
 
-func (h *handler) ListCertifications(c *fiber.Ctx) error {
+func (h *handler) ListExtras(c *fiber.Ctx) error {
     userID, err := middleware.GetUserIDFromFiberContext(c)
     if err != nil {
         return response.Error(c, fiber.StatusUnauthorized, ErrCodeInvalidPayload, fiber.Map{"message":"authentication required"})
     }
 
-    list, err := h.service.ListCertifications(c.Context(), userID)
+    list, err := h.service.ListExtras(c.Context(), userID)
     if err != nil {
         return h.handleError(c, err)
     }
@@ -116,18 +112,18 @@ func (h *handler) ListCertifications(c *fiber.Ctx) error {
     return response.Success(c, fiber.StatusOK, list)
 }
 
-func (h *handler) DeleteCertification(c *fiber.Ctx) error {
+func (h *handler) DeleteExtra(c *fiber.Ctx) error {
     userID, err := middleware.GetUserIDFromFiberContext(c)
     if err != nil {
         return response.Error(c, fiber.StatusUnauthorized, ErrCodeInvalidPayload, fiber.Map{"message":"authentication required"})
     }
 
-    certID, err := uuid.Parse(c.Params("id"))
+    extraID, err := uuid.Parse(c.Params("id"))
     if err != nil {
         return response.Error(c, fiber.StatusBadRequest, ErrCodeInvalidPayload, fiber.Map{"message":"invalid id"})
     }
 
-    if err := h.service.DeleteCertification(c.Context(), userID, certID); err != nil {
+    if err := h.service.DeleteExtra(c.Context(), userID, extraID); err != nil {
         return h.handleError(c, err)
     }
 
@@ -148,6 +144,6 @@ func (h *handler) handleError(c *fiber.Ctx, err error) error {
         return response.Error(c, status, domainErr.Code, fiber.Map{"message": domainErr.Message})
     }
 
-    h.logger.Error("unexpected error in certifications handler", slog.Any("error", err))
+    h.logger.Error("unexpected error in extras handler", slog.Any("error", err))
     return response.Error(c, fiber.StatusInternalServerError, ErrCodeRepositoryFailure, fiber.Map{"message":"internal server error"})
 }

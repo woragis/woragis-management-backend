@@ -1,9 +1,10 @@
 package certifications
 
 import (
-    "github.com/gofiber/fiber/v2"
-    "log/slog"
-    "gorm.io/gorm"
+	"log/slog"
+
+	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 // SetupRoutes registers certifications routes under the provided router.

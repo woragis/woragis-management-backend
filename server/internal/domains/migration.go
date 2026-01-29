@@ -3,20 +3,21 @@ package management
 import (
 	"gorm.io/gorm"
 
-	"woragis-management-service/internal/domains/projects"
-	"woragis-management-service/internal/domains/projects/projectcasestudies"
-	"woragis-management-service/internal/domains/ideas"
+	"woragis-management-service/internal/domains/apikeys"
+	"woragis-management-service/internal/domains/certifications"
 	"woragis-management-service/internal/domains/chats"
 	"woragis-management-service/internal/domains/clients"
-	"woragis-management-service/internal/domains/finances"
 	"woragis-management-service/internal/domains/experiences"
-	"woragis-management-service/internal/domains/userpreferences"
-	"woragis-management-service/internal/domains/userprofiles"
-	"woragis-management-service/internal/domains/apikeys"
+	"woragis-management-service/internal/domains/finances"
+	"woragis-management-service/internal/domains/ideas"
 	"woragis-management-service/internal/domains/languages"
+	"woragis-management-service/internal/domains/projects"
+	"woragis-management-service/internal/domains/projects/projectcasestudies"
 	"woragis-management-service/internal/domains/scheduler"
 	"woragis-management-service/internal/domains/testimonials"
-    "woragis-management-service/internal/domains/certifications"
+	"woragis-management-service/internal/domains/extras"
+	"woragis-management-service/internal/domains/userpreferences"
+	"woragis-management-service/internal/domains/userprofiles"
 )
 
 // MigrateManagementTables runs database migrations for all management-related domains
@@ -136,6 +137,7 @@ func MigrateManagementTables(db *gorm.DB) error {
 	// Migrate certifications table
 	if err := db.AutoMigrate(
 		&certifications.Certification{},
+		&extras.Extra{},
 	); err != nil {
 		return err
 	}

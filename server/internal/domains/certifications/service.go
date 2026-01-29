@@ -1,11 +1,12 @@
 package certifications
 
 import (
-    "context"
-    "time"
+	"context"
+	"time"
 
-    "github.com/google/uuid"
-    "log/slog"
+	"log/slog"
+
+	"github.com/google/uuid"
 )
 
 // Service handles certifications use-cases.

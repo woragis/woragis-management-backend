@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"woragis-management-service/internal/domains/apikeys"
+	"woragis-management-service/internal/domains/certifications"
 	"woragis-management-service/internal/domains/chats"
 	"woragis-management-service/internal/domains/clients"
 	"woragis-management-service/internal/domains/csrf"
@@ -17,7 +18,6 @@ import (
 	"woragis-management-service/internal/domains/projects"
 	"woragis-management-service/internal/domains/scheduler"
 	"woragis-management-service/internal/domains/testimonials"
-    "woragis-management-service/internal/domains/certifications"
 	"woragis-management-service/internal/domains/userpreferences"
 	"woragis-management-service/internal/domains/userprofiles"
 	"woragis-management-service/pkg/aiservice"

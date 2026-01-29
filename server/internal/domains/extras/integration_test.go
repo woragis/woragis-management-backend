@@ -1,18 +1,18 @@
-package certifications
+package extras
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
-	"net/http/httptest"
-	"testing"
+    "bytes"
+    "encoding/json"
+    "io"
+    "net/http/httptest"
+    "testing"
 
-	"log/slog"
+    "log/slog"
 
-	glebarezsqlite "github.com/glebarez/sqlite"
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
-	"gorm.io/gorm"
+    glebarezsqlite "github.com/glebarez/sqlite"
+    "github.com/gofiber/fiber/v2"
+    "github.com/google/uuid"
+    "gorm.io/gorm"
 )
 
 func setupApp(t *testing.T) *fiber.App {
@@ -21,7 +21,7 @@ func setupApp(t *testing.T) *fiber.App {
         t.Fatalf("failed to open sqlite: %v", err)
     }
 
-    if err := db.AutoMigrate(&Certification{}); err != nil {
+    if err := db.AutoMigrate(&Extra{}); err != nil {
         t.Fatalf("auto migrate failed: %v", err)
     }
 
@@ -36,24 +36,22 @@ func setupApp(t *testing.T) *fiber.App {
     logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{}))
 
     api := app.Group("/api/v1")
-    SetupRoutes(api.Group("/certifications"), db, logger)
+    SetupRoutes(api.Group("/extras"), db, logger)
 
     return app
 }
 
-func TestCertificationsCRUD(t *testing.T) {
+func TestExtrasCRUD(t *testing.T) {
     app := setupApp(t)
 
     // Create
-    payload := map[string]string{
-        "name": "Golang Pro",
-        "issuer": "Acme",
-        "date": "2024-12",
-        "url": "https://example.com/cert",
-        "description": "Certified Go developer",
+    payload := map[string]interface{}{
+        "category": "misc",
+        "text": "Some extra note",
+        "ordinal": 1,
     }
     b, _ := json.Marshal(payload)
-    req := httptest.NewRequest("POST", "/api/v1/certifications", bytes.NewReader(b))
+    req := httptest.NewRequest("POST", "/api/v1/extras", bytes.NewReader(b))
     req.Header.Set("Content-Type", "application/json")
     resp, err := app.Test(req)
     if err != nil {
@@ -70,7 +68,7 @@ func TestCertificationsCRUD(t *testing.T) {
     id := data["id"].(string)
 
     // List
-    req = httptest.NewRequest("GET", "/api/v1/certifications", nil)
+    req = httptest.NewRequest("GET", "/api/v1/extras", nil)
     resp, err = app.Test(req)
     if err != nil {
         t.Fatalf("list request failed: %v", err)
@@ -88,7 +86,7 @@ func TestCertificationsCRUD(t *testing.T) {
     }
 
     // Get
-    req = httptest.NewRequest("GET", "/api/v1/certifications/"+id, nil)
+    req = httptest.NewRequest("GET", "/api/v1/extras/"+id, nil)
     resp, err = app.Test(req)
     if err != nil {
         t.Fatalf("get request failed: %v", err)
@@ -98,9 +96,9 @@ func TestCertificationsCRUD(t *testing.T) {
     }
 
     // Update
-    updatePayload := map[string]string{"issuer":"New Issuer"}
+    updatePayload := map[string]string{"text":"Updated note"}
     b, _ = json.Marshal(updatePayload)
-    req = httptest.NewRequest("PUT", "/api/v1/certifications/"+id, bytes.NewReader(b))
+    req = httptest.NewRequest("PUT", "/api/v1/extras/"+id, bytes.NewReader(b))
     req.Header.Set("Content-Type", "application/json")
     resp, err = app.Test(req)
     if err != nil {
@@ -114,12 +112,12 @@ func TestCertificationsCRUD(t *testing.T) {
         t.Fatalf("failed decode update response: %v", err)
     }
     updatedData := updated["data"].(map[string]interface{})
-    if updatedData["issuer"].(string) != "New Issuer" {
-        t.Fatalf("issuer not updated")
+    if updatedData["text"].(string) != "Updated note" {
+        t.Fatalf("text not updated")
     }
 
     // Delete
-    req = httptest.NewRequest("DELETE", "/api/v1/certifications/"+id, nil)
+    req = httptest.NewRequest("DELETE", "/api/v1/extras/"+id, nil)
     resp, err = app.Test(req)
     if err != nil {
         t.Fatalf("delete request failed: %v", err)
@@ -129,7 +127,7 @@ func TestCertificationsCRUD(t *testing.T) {
     }
 
     // List again
-    req = httptest.NewRequest("GET", "/api/v1/certifications", nil)
+    req = httptest.NewRequest("GET", "/api/v1/extras", nil)
     resp, err = app.Test(req)
     if err != nil {
         t.Fatalf("list request failed: %v", err)

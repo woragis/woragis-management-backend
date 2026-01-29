@@ -1,9 +1,9 @@
 package certifications
 
 import (
-    "time"
+	"time"
 
-    "github.com/google/uuid"
+	"github.com/google/uuid"
 )
 
 // Certification represents a user's certification or credential.

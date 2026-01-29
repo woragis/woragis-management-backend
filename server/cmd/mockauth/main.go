@@ -1,10 +1,10 @@
 package main
 
 import (
-    "encoding/json"
-    "log"
-    "net/http"
-    "os"
+	"encoding/json"
+	"log"
+	"net/http"
+	"os"
 )
 
 type validateReq struct {
