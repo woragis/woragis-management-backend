@@ -13,6 +13,9 @@ import (
 	"github.com/woragis/management/backend/server/internal/httpserver"
 	"github.com/woragis/management/backend/server/internal/middleware"
 	"github.com/woragis/management/backend/server/internal/migrate"
+	"github.com/woragis/management/backend/server/internal/models"
+	devprojectrepo "github.com/woragis/management/backend/server/internal/devproject/repository"
+	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
 	"github.com/woragis/management/backend/server/internal/platform/postgres"
 )
 
@@ -59,6 +62,19 @@ func main() {
 		}
 	}
 
+	if err := db.AutoMigrate(
+		&models.Project{},
+		&models.ProjectLink{},
+		&models.ProjectDomain{},
+		&models.ProjectSecret{},
+		&models.ProjectGallery{},
+	); err != nil {
+		log.Fatalf("automigrate: %v", err)
+	}
+
+	devRepo := devprojectrepo.New(db)
+	devSvc := devprojectsvc.New(devRepo, loadSecretsKey())
+
 	mediaDir := strings.TrimSpace(os.Getenv("MEDIA_STORAGE_DIR"))
 	if mediaDir == "" {
 		mediaDir = "./data/media"
@@ -74,6 +90,7 @@ func main() {
 		MediaDir:     mediaDir,
 		MediaBaseURL: mediaBaseURL,
 		SecretsKey:   loadSecretsKey(),
+		DevProjects:  devSvc,
 	}
 
 	cfg := middleware.LoadConfigFromEnv()
