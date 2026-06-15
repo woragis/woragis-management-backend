@@ -54,4 +54,10 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("PATCH /v1/admin/profile", admin(ph.update))
 		mux.HandleFunc("GET /v1/public/profile", ph.getPublic)
 	}
+
+	if app.DevProjects != nil {
+		pub := newPublicHandler(app.DevProjects)
+		mux.HandleFunc("GET /v1/public/projects", pub.listProjects)
+		mux.HandleFunc("GET /v1/public/projects/{slug}", pub.getProject)
+	}
 }
