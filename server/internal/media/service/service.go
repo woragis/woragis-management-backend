@@ -22,11 +22,11 @@ const maxUploadBytes = 10 << 20 // 10 MiB
 
 type Service struct {
 	repo    *repository.Repository
-	store   *storage.Local
+	store   storage.BlobStore
 	baseURL string
 }
 
-func New(repo *repository.Repository, store *storage.Local, baseURL string) *Service {
+func New(repo *repository.Repository, store storage.BlobStore, baseURL string) *Service {
 	return &Service{repo: repo, store: store, baseURL: strings.TrimRight(baseURL, "/")}
 }
 
@@ -78,9 +78,6 @@ func (s *Service) Upload(ctx context.Context, in UploadInput) (*models.MediaAsse
 		ext = extFromMime(in.MimeType)
 	}
 	key := id.String() + ext
-	if _, err := s.store.Save(key, bytes.NewReader(data)); err != nil {
-		return nil, apperrors.InternalCause(apperrors.CodeMediaPostV1ServiceCreateFailed, apperrors.MsgMediaPostV1ServiceCreateFailed, err)
-	}
 
 	mimeType := strings.TrimSpace(in.MimeType)
 	if mimeType == "" {
@@ -88,6 +85,10 @@ func (s *Service) Upload(ctx context.Context, in UploadInput) (*models.MediaAsse
 	}
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
+	}
+
+	if _, err := s.store.Save(ctx, key, bytes.NewReader(data), mimeType); err != nil {
+		return nil, apperrors.InternalCause(apperrors.CodeMediaPostV1ServiceCreateFailed, apperrors.MsgMediaPostV1ServiceCreateFailed, err)
 	}
 
 	asset := &models.MediaAsset{
@@ -100,7 +101,7 @@ func (s *Service) Upload(ctx context.Context, in UploadInput) (*models.MediaAsse
 		AltText:    strings.TrimSpace(in.AltText),
 	}
 	if err := s.repo.Create(ctx, asset); err != nil {
-		_ = s.store.Delete(key)
+		_ = s.store.Delete(ctx, key)
 		return nil, apperrors.InternalCause(apperrors.CodeMediaPostV1ServiceCreateFailed, apperrors.MsgMediaPostV1ServiceCreateFailed, err)
 	}
 	return asset, nil
@@ -111,7 +112,7 @@ func (s *Service) Open(ctx context.Context, id uuid.UUID) (*models.MediaAsset, i
 	if err != nil {
 		return nil, nil, err
 	}
-	f, err := s.store.Open(m.StorageKey)
+	f, err := s.store.Open(ctx, m.StorageKey)
 	if err != nil {
 		return nil, nil, apperrors.NotFound(apperrors.CodeMediaGetV1ServiceNotFound, apperrors.MsgMediaGetV1ServiceNotFound)
 	}
@@ -129,7 +130,7 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
 		}
 		return apperrors.InternalCause(apperrors.CodeMediaPostV1ServiceCreateFailed, apperrors.MsgMediaPostV1ServiceCreateFailed, err)
 	}
-	_ = s.store.Delete(m.StorageKey)
+	_ = s.store.Delete(ctx, m.StorageKey)
 	return nil
 }
 

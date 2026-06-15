@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -18,7 +19,7 @@ func NewLocal(dir string) (*Local, error) {
 	return &Local{Dir: dir}, nil
 }
 
-func (l *Local) Save(key string, r io.Reader) (int64, error) {
+func (l *Local) Save(_ context.Context, key string, r io.Reader, _ string) (int64, error) {
 	path := filepath.Join(l.Dir, key)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return 0, fmt.Errorf("mkdir: %w", err)
@@ -35,7 +36,7 @@ func (l *Local) Save(key string, r io.Reader) (int64, error) {
 	return n, nil
 }
 
-func (l *Local) Open(key string) (*os.File, error) {
+func (l *Local) Open(_ context.Context, key string) (io.ReadCloser, error) {
 	path := filepath.Join(l.Dir, key)
 	f, err := os.Open(path)
 	if err != nil {
@@ -44,14 +45,10 @@ func (l *Local) Open(key string) (*os.File, error) {
 	return f, nil
 }
 
-func (l *Local) Delete(key string) error {
+func (l *Local) Delete(_ context.Context, key string) error {
 	path := filepath.Join(l.Dir, key)
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("delete file: %w", err)
 	}
 	return nil
-}
-
-func (l *Local) Path(key string) string {
-	return filepath.Join(l.Dir, key)
 }

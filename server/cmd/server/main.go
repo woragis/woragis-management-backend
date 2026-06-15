@@ -82,18 +82,15 @@ func main() {
 	devRepo := devprojectrepo.New(db)
 	devSvc := devprojectsvc.New(devRepo, loadSecretsKey())
 
-	mediaDir := strings.TrimSpace(os.Getenv("MEDIA_STORAGE_DIR"))
-	if mediaDir == "" {
-		mediaDir = "./data/media"
-	}
 	mediaBaseURL := strings.TrimSpace(os.Getenv("MEDIA_PUBLIC_BASE_URL"))
 	if mediaBaseURL == "" {
 		mediaBaseURL = "http://127.0.0.1:8080/v1/public/media"
 	}
-	mediaStore, err := mediastore.NewLocal(mediaDir)
+	mediaStore, driver, err := mediastore.NewFromEnv()
 	if err != nil {
 		log.Fatalf("media storage: %v", err)
 	}
+	log.Printf("media storage driver: %s", driver)
 	mediaRepo := mediarepo.New(db)
 	mediaSvc := mediasvc.New(mediaRepo, mediaStore, mediaBaseURL)
 
@@ -106,7 +103,6 @@ func main() {
 	app := &httpserver.App{
 		DB:           db,
 		AdminAPIKey:  adminKey,
-		MediaDir:     mediaDir,
 		MediaBaseURL: mediaBaseURL,
 		SecretsKey:   loadSecretsKey(),
 		DevProjects:  devSvc,
