@@ -1,0 +1,59 @@
+name: woragis-management-backend
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  media_data:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-woragis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-woragis}
+      POSTGRES_DB: ${POSTGRES_DB:-woragis}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    environment:
+      HTTP_ADDR: ${HTTP_ADDR:-:8080}
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-woragis}:${POSTGRES_PASSWORD:-woragis}@postgres:5432/${POSTGRES_DB:-woragis}?sslmode=disable}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-only-change-me}
+      SECRETS_ENCRYPTION_KEY: ${SECRETS_ENCRYPTION_KEY:-}
+      MEDIA_STORAGE_DIR: ${MEDIA_STORAGE_DIR:-/data/media}
+      MEDIA_PUBLIC_BASE_URL: ${MEDIA_PUBLIC_BASE_URL:-http://127.0.0.1:8080/v1/public/media}
+      MIGRATIONS_DIR: ${MIGRATIONS_DIR:-/migrations}
+      SKIP_SQL_MIGRATIONS: ${SKIP_SQL_MIGRATIONS:-0}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS:-1}
+      METRICS_ENABLED: ${METRICS_ENABLED:-1}
+    volumes:
+      - media_data:/data/media
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
