@@ -44,4 +44,14 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.HandleFunc("GET /v1/public/media/{id}/file", mh.serveFile)
 		mux.HandleFunc("GET /v1/public/media/{id}", mh.get)
 	}
+
+	if app.Profile != nil {
+		ph := newProfileHandler(app.Profile)
+		admin := func(h http.HandlerFunc) http.Handler {
+			return middleware.AdminAuth(app.AdminAPIKey, h)
+		}
+		mux.Handle("GET /v1/admin/profile", admin(ph.getAdmin))
+		mux.Handle("PATCH /v1/admin/profile", admin(ph.update))
+		mux.HandleFunc("GET /v1/public/profile", ph.getPublic)
+	}
 }

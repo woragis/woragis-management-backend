@@ -19,6 +19,8 @@ import (
 	mediarepo "github.com/woragis/management/backend/server/internal/media/repository"
 	mediasvc "github.com/woragis/management/backend/server/internal/media/service"
 	mediastore "github.com/woragis/management/backend/server/internal/media/storage"
+	profilerepo "github.com/woragis/management/backend/server/internal/profile/repository"
+	profilesvc "github.com/woragis/management/backend/server/internal/profile/service"
 	"github.com/woragis/management/backend/server/internal/platform/postgres"
 )
 
@@ -72,6 +74,7 @@ func main() {
 		&models.ProjectSecret{},
 		&models.ProjectGallery{},
 		&models.MediaAsset{},
+		&models.Profile{},
 	); err != nil {
 		log.Fatalf("automigrate: %v", err)
 	}
@@ -94,6 +97,12 @@ func main() {
 	mediaRepo := mediarepo.New(db)
 	mediaSvc := mediasvc.New(mediaRepo, mediaStore, mediaBaseURL)
 
+	profileRepo := profilerepo.New(db)
+	profileSvc := profilesvc.New(profileRepo)
+	if _, err := profileRepo.EnsureDefault(context.Background()); err != nil {
+		log.Fatalf("default profile: %v", err)
+	}
+
 	app := &httpserver.App{
 		DB:           db,
 		AdminAPIKey:  adminKey,
@@ -102,6 +111,7 @@ func main() {
 		SecretsKey:   loadSecretsKey(),
 		DevProjects:  devSvc,
 		Media:        mediaSvc,
+		Profile:      profileSvc,
 	}
 
 	cfg := middleware.LoadConfigFromEnv()
