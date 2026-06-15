@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
+	mediasvc "github.com/woragis/management/backend/server/internal/media/service"
 	"gorm.io/gorm"
 )
 
@@ -13,4 +14,5 @@ type App struct {
 	SecretsKey   []byte
 
 	DevProjects *devprojectsvc.Service
+	Media       *mediasvc.Service
 }

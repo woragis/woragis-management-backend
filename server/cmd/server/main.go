@@ -16,6 +16,9 @@ import (
 	"github.com/woragis/management/backend/server/internal/models"
 	devprojectrepo "github.com/woragis/management/backend/server/internal/devproject/repository"
 	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
+	mediarepo "github.com/woragis/management/backend/server/internal/media/repository"
+	mediasvc "github.com/woragis/management/backend/server/internal/media/service"
+	mediastore "github.com/woragis/management/backend/server/internal/media/storage"
 	"github.com/woragis/management/backend/server/internal/platform/postgres"
 )
 
@@ -68,6 +71,7 @@ func main() {
 		&models.ProjectDomain{},
 		&models.ProjectSecret{},
 		&models.ProjectGallery{},
+		&models.MediaAsset{},
 	); err != nil {
 		log.Fatalf("automigrate: %v", err)
 	}
@@ -83,6 +87,12 @@ func main() {
 	if mediaBaseURL == "" {
 		mediaBaseURL = "http://127.0.0.1:8080/v1/public/media"
 	}
+	mediaStore, err := mediastore.NewLocal(mediaDir)
+	if err != nil {
+		log.Fatalf("media storage: %v", err)
+	}
+	mediaRepo := mediarepo.New(db)
+	mediaSvc := mediasvc.New(mediaRepo, mediaStore, mediaBaseURL)
 
 	app := &httpserver.App{
 		DB:           db,
@@ -91,6 +101,7 @@ func main() {
 		MediaBaseURL: mediaBaseURL,
 		SecretsKey:   loadSecretsKey(),
 		DevProjects:  devSvc,
+		Media:        mediaSvc,
 	}
 
 	cfg := middleware.LoadConfigFromEnv()
