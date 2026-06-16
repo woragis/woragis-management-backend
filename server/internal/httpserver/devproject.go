@@ -361,6 +361,7 @@ type createProjectBody struct {
 	RepoURL          string     `json:"repoUrl"`
 	DemoURL          string     `json:"demoUrl"`
 	GithubURL        string     `json:"githubUrl"`
+	RepoVisibility   string     `json:"repoVisibility"`
 	Notes            string     `json:"notes"`
 	IsPublic         bool       `json:"isPublic"`
 	Featured         bool       `json:"featured"`
@@ -385,6 +386,7 @@ type updateProjectBody struct {
 	RepoURL          *string    `json:"repoUrl"`
 	DemoURL          *string    `json:"demoUrl"`
 	GithubURL        *string    `json:"githubUrl"`
+	RepoVisibility   *string    `json:"repoVisibility"`
 	Notes            *string    `json:"notes"`
 	IsPublic         *bool      `json:"isPublic"`
 	Featured         *bool      `json:"featured"`
@@ -405,6 +407,7 @@ func (b updateProjectBody) toInput() devprojectsvc.UpdateProjectInput {
 		RepoURL:          b.RepoURL,
 		DemoURL:          b.DemoURL,
 		GithubURL:        b.GithubURL,
+		RepoVisibility:   b.RepoVisibility,
 		Notes:            b.Notes,
 		IsPublic:         b.IsPublic,
 		Featured:         b.Featured,

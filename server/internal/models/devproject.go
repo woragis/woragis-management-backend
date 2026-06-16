@@ -19,6 +19,7 @@ type Project struct {
 	RepoURL          string         `gorm:"column:repo_url;size:500" json:"repoUrl"`
 	DemoURL          string         `gorm:"column:demo_url;size:500" json:"demoUrl"`
 	GithubURL        string         `gorm:"column:github_url;size:500" json:"githubUrl"`
+	RepoVisibility   string         `gorm:"column:repo_visibility;size:16;not null;default:private" json:"repoVisibility"`
 	Notes            string         `gorm:"type:text" json:"notes"`
 	IsPublic         bool           `gorm:"column:is_public;not null;default:false" json:"isPublic"`
 	Featured         bool           `gorm:"not null;default:false" json:"featured"`

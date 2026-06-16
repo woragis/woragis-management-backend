@@ -39,6 +39,7 @@ type CreateProjectInput struct {
 	RepoURL          string
 	DemoURL          string
 	GithubURL        string
+	RepoVisibility   string
 	Notes            string
 	IsPublic         bool
 	Featured         bool
@@ -60,6 +61,7 @@ type UpdateProjectInput struct {
 	RepoURL          *string
 	DemoURL          *string
 	GithubURL        *string
+	RepoVisibility   *string
 	Notes            *string
 	IsPublic         *bool
 	Featured         *bool
@@ -111,7 +113,8 @@ type PublicProject struct {
 	Status           string                  `json:"status"`
 	Stack            []string                `json:"stack"`
 	DemoURL          string                  `json:"demoUrl"`
-	GithubURL        string                  `json:"githubUrl"`
+	GithubURL        string                  `json:"githubUrl,omitempty"`
+	RepoURL          string                  `json:"repoUrl,omitempty"`
 	Featured         bool                    `json:"featured"`
 	DisplayOrder     int                     `json:"displayOrder"`
 	CoverImageID     *uuid.UUID              `json:"coverImageId"`
@@ -158,6 +161,7 @@ func (s *Service) Create(ctx context.Context, in CreateProjectInput) (*models.Pr
 		RepoURL:          strings.TrimSpace(in.RepoURL),
 		DemoURL:          strings.TrimSpace(in.DemoURL),
 		GithubURL:        strings.TrimSpace(in.GithubURL),
+		RepoVisibility:   normalizeRepoVisibility(in.RepoVisibility),
 		Notes:            strings.TrimSpace(in.Notes),
 		IsPublic:         in.IsPublic,
 		Featured:         in.Featured,
@@ -214,6 +218,9 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateProjectInpu
 	}
 	if in.GithubURL != nil {
 		p.GithubURL = strings.TrimSpace(*in.GithubURL)
+	}
+	if in.RepoVisibility != nil {
+		p.RepoVisibility = normalizeRepoVisibility(*in.RepoVisibility)
 	}
 	if in.Notes != nil {
 		p.Notes = strings.TrimSpace(*in.Notes)
@@ -452,7 +459,7 @@ func toPublicProject(p models.Project) PublicProject {
 			publicLinks = append(publicLinks, l)
 		}
 	}
-	return PublicProject{
+	pub := PublicProject{
 		ID:               p.ID,
 		Name:             p.Name,
 		PublicSlug:       p.PublicSlug,
@@ -461,13 +468,20 @@ func toPublicProject(p models.Project) PublicProject {
 		Status:           p.Status,
 		Stack:            parseStack(p.Stack),
 		DemoURL:          p.DemoURL,
-		GithubURL:        p.GithubURL,
 		Featured:         p.Featured,
 		DisplayOrder:     p.DisplayOrder,
 		CoverImageID:     p.CoverImageID,
 		Links:            publicLinks,
 		Gallery:          p.Gallery,
 	}
+	if normalizeRepoVisibility(p.RepoVisibility) == "public" {
+		pub.GithubURL = p.GithubURL
+		if pub.GithubURL == "" {
+			pub.GithubURL = p.RepoURL
+		}
+		pub.RepoURL = p.RepoURL
+	}
+	return pub
 }
 
 func secretView(row models.ProjectSecret, value string) models.ProjectSecretView {
@@ -511,6 +525,13 @@ func normalizeEnvironment(env string) string {
 	default:
 		return "production"
 	}
+}
+
+func normalizeRepoVisibility(v string) string {
+	if strings.TrimSpace(strings.ToLower(v)) == "public" {
+		return "public"
+	}
+	return "private"
 }
 
 func stackJSON(stack []string) datatypes.JSON {
