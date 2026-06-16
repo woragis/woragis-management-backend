@@ -16,6 +16,8 @@ import (
 	"github.com/woragis/management/backend/server/internal/models"
 	devprojectrepo "github.com/woragis/management/backend/server/internal/devproject/repository"
 	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
+	financerepo "github.com/woragis/management/backend/server/internal/finance/repository"
+	financesvc "github.com/woragis/management/backend/server/internal/finance/service"
 	mediarepo "github.com/woragis/management/backend/server/internal/media/repository"
 	mediasvc "github.com/woragis/management/backend/server/internal/media/service"
 	mediastore "github.com/woragis/management/backend/server/internal/media/storage"
@@ -74,6 +76,12 @@ func main() {
 		&models.ProjectSecret{},
 		&models.ProjectGallery{},
 		&models.ProjectEnv{},
+		&models.IncomeSource{},
+		&models.Expense{},
+		&models.Transaction{},
+		&models.Invoice{},
+		&models.InvoiceItem{},
+		&models.BudgetPlan{},
 		&models.MediaAsset{},
 		&models.Profile{},
 	); err != nil {
@@ -82,6 +90,9 @@ func main() {
 
 	devRepo := devprojectrepo.New(db)
 	devSvc := devprojectsvc.New(devRepo, loadSecretsKey())
+
+	financeRepo := financerepo.New(db)
+	financeSvc := financesvc.New(financeRepo)
 
 	mediaBaseURL := strings.TrimSpace(os.Getenv("MEDIA_PUBLIC_BASE_URL"))
 	if mediaBaseURL == "" {
@@ -107,6 +118,7 @@ func main() {
 		MediaBaseURL: mediaBaseURL,
 		SecretsKey:   loadSecretsKey(),
 		DevProjects:  devSvc,
+		Finance:      financeSvc,
 		Media:        mediaSvc,
 		MediaRepo:    mediaRepo,
 		Profile:      profileSvc,
