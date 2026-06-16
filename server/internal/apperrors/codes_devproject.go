@@ -72,4 +72,13 @@ const (
 
 	CodeProjectGalleryDeleteV1ServiceNotFound = "PROJECT_GALLERY_DELETE_V1_SERVICE_NOT_FOUND"
 	MsgProjectGalleryDeleteV1ServiceNotFound  = "Gallery item not found."
+
+	CodeProjectEnvPostV1ServiceKeyEmpty = "PROJECT_ENV_POST_V1_SERVICE_KEY_EMPTY"
+	MsgProjectEnvPostV1ServiceKeyEmpty  = "Environment variable key is required."
+
+	CodeProjectEnvPostV1ServiceCreateFailed = "PROJECT_ENV_POST_V1_SERVICE_CREATE_FAILED"
+	MsgProjectEnvPostV1ServiceCreateFailed  = "Failed to create environment variable."
+
+	CodeProjectEnvDeleteV1ServiceNotFound = "PROJECT_ENV_DELETE_V1_SERVICE_NOT_FOUND"
+	MsgProjectEnvDeleteV1ServiceNotFound  = "Environment variable not found."
 )

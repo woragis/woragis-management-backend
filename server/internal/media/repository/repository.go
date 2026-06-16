@@ -26,6 +26,14 @@ func (r *Repository) List(ctx context.Context) ([]models.MediaAsset, error) {
 	return out, nil
 }
 
+func (r *Repository) Count(ctx context.Context) (int64, error) {
+	var n int64
+	if err := r.db.WithContext(ctx).Model(&models.MediaAsset{}).Count(&n).Error; err != nil {
+		return 0, fmt.Errorf("count media: %w", err)
+	}
+	return n, nil
+}
+
 func (r *Repository) FindByID(ctx context.Context, id uuid.UUID) (*models.MediaAsset, error) {
 	var m models.MediaAsset
 	err := r.db.WithContext(ctx).Where("id = ?", id).First(&m).Error

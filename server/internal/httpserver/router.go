@@ -10,11 +10,16 @@ func Mount(mux *http.ServeMux, app *App) {
 	mux.HandleFunc("GET /health", handleHealth)
 	mux.HandleFunc("GET /ready", handleReady(app.DB))
 
+	admin := func(h http.HandlerFunc) http.Handler {
+		return middleware.AdminAuth(app.AdminAPIKey, h)
+	}
+
+	if app.DevProjects != nil {
+		mux.Handle("GET /v1/admin/dashboard", admin(handleDashboard(app.DevProjects, app.MediaRepo)))
+	}
+
 	if app.DevProjects != nil {
 		dh := newDevprojectHandler(app.DevProjects)
-		admin := func(h http.HandlerFunc) http.Handler {
-			return middleware.AdminAuth(app.AdminAPIKey, h)
-		}
 		mux.Handle("GET /v1/admin/projects", admin(dh.list))
 		mux.Handle("POST /v1/admin/projects", admin(dh.create))
 		mux.Handle("GET /v1/admin/projects/{id}", admin(dh.get))
@@ -30,6 +35,9 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("DELETE /v1/admin/projects/{id}/secrets/{secretId}", admin(dh.deleteSecret))
 		mux.Handle("POST /v1/admin/projects/{id}/gallery", admin(dh.createGallery))
 		mux.Handle("DELETE /v1/admin/projects/{id}/gallery/{itemId}", admin(dh.deleteGallery))
+		mux.Handle("GET /v1/admin/projects/{id}/envs", admin(dh.listEnvs))
+		mux.Handle("POST /v1/admin/projects/{id}/envs", admin(dh.createEnv))
+		mux.Handle("DELETE /v1/admin/projects/{id}/envs/{envId}", admin(dh.deleteEnv))
 	}
 
 	if app.Media != nil {

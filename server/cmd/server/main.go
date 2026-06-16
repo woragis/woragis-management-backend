@@ -73,6 +73,7 @@ func main() {
 		&models.ProjectDomain{},
 		&models.ProjectSecret{},
 		&models.ProjectGallery{},
+		&models.ProjectEnv{},
 		&models.MediaAsset{},
 		&models.Profile{},
 	); err != nil {
@@ -107,6 +108,7 @@ func main() {
 		SecretsKey:   loadSecretsKey(),
 		DevProjects:  devSvc,
 		Media:        mediaSvc,
+		MediaRepo:    mediaRepo,
 		Profile:      profileSvc,
 	}
 

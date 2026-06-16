@@ -31,6 +31,7 @@ type Project struct {
 	Links            []ProjectLink  `gorm:"foreignKey:ProjectID" json:"links,omitempty"`
 	Domains          []ProjectDomain `gorm:"foreignKey:ProjectID" json:"domains,omitempty"`
 	Gallery          []ProjectGallery `gorm:"foreignKey:ProjectID" json:"gallery,omitempty"`
+	Envs             []ProjectEnv   `gorm:"foreignKey:ProjectID" json:"envs,omitempty"`
 }
 
 type ProjectLink struct {
@@ -90,4 +91,15 @@ type ProjectGallery struct {
 	DisplayOrder int       `gorm:"column:display_order;not null;default:0" json:"displayOrder"`
 	Caption      string    `gorm:"size:300" json:"caption"`
 	CreatedAt    time.Time `json:"createdAt"`
+}
+
+type ProjectEnv struct {
+	ID          uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
+	ProjectID   uuid.UUID `gorm:"column:project_id;type:uuid;not null;index" json:"projectId"`
+	Key         string    `gorm:"size:200;not null" json:"key"`
+	Value       string    `gorm:"type:text;not null" json:"value"`
+	Environment string    `gorm:"size:32;not null;default:production" json:"environment"`
+	Notes       string    `gorm:"type:text" json:"notes"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }

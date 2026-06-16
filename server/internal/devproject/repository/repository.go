@@ -34,6 +34,9 @@ func (r *Repository) FindProjectByID(ctx context.Context, id uuid.UUID) (*models
 		Preload("Gallery", func(db *gorm.DB) *gorm.DB {
 			return db.Order("display_order ASC")
 		}).
+		Preload("Envs", func(db *gorm.DB) *gorm.DB {
+			return db.Order("key ASC")
+		}).
 		Where("id = ?", id).
 		First(&p).Error
 	if err != nil {
@@ -110,6 +113,9 @@ func (r *Repository) DeleteProject(ctx context.Context, id uuid.UUID) error {
 		}
 		if err := tx.Where("project_id = ?", id).Delete(&models.ProjectGallery{}).Error; err != nil {
 			return fmt.Errorf("delete gallery: %w", err)
+		}
+		if err := tx.Where("project_id = ?", id).Delete(&models.ProjectEnv{}).Error; err != nil {
+			return fmt.Errorf("delete envs: %w", err)
 		}
 		res := tx.Where("id = ?", id).Delete(&models.Project{})
 		if res.Error != nil {

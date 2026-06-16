@@ -19,6 +19,37 @@ func newDevprojectHandler(svc *devprojectsvc.Service) *devprojectHandler {
 }
 
 func (h *devprojectHandler) list(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	var isPublic, featured *bool
+	if v := q.Get("isPublic"); v == "true" {
+		b := true
+		isPublic = &b
+	} else if v == "false" {
+		b := false
+		isPublic = &b
+	}
+	if v := q.Get("featured"); v == "true" {
+		b := true
+		featured = &b
+	} else if v == "false" {
+		b := false
+		featured = &b
+	}
+	filter := devprojectsvc.ListFilter{
+		Status:   q.Get("status"),
+		IsPublic: isPublic,
+		Featured: featured,
+		Query:    q.Get("q"),
+	}
+	if filter.Status != "" || filter.IsPublic != nil || filter.Featured != nil || filter.Query != "" {
+		items, err := h.svc.ListFiltered(r.Context(), filter)
+		if err != nil {
+			apperrors.WriteError(w, err)
+			return
+		}
+		apperrors.WriteJSON(w, http.StatusOK, items)
+		return
+	}
 	items, err := h.svc.List(r.Context())
 	if err != nil {
 		apperrors.WriteError(w, err)
@@ -268,6 +299,57 @@ func (h *devprojectHandler) deleteGallery(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *devprojectHandler) listEnvs(w http.ResponseWriter, r *http.Request) {
+	projectID, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeProjectGetV1HandlerPathIDInvalid, apperrors.MsgProjectGetV1HandlerPathIDInvalid))
+		return
+	}
+	items, err := h.svc.ListEnvs(r.Context(), projectID)
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	apperrors.WriteJSON(w, http.StatusOK, items)
+}
+
+func (h *devprojectHandler) createEnv(w http.ResponseWriter, r *http.Request) {
+	projectID, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeProjectGetV1HandlerPathIDInvalid, apperrors.MsgProjectGetV1HandlerPathIDInvalid))
+		return
+	}
+	var body createEnvBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeProjectEnvPostV1ServiceKeyEmpty, "Request body is invalid."))
+		return
+	}
+	item, err := h.svc.CreateEnv(r.Context(), projectID, body.toInput())
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	apperrors.WriteJSON(w, http.StatusCreated, item)
+}
+
+func (h *devprojectHandler) deleteEnv(w http.ResponseWriter, r *http.Request) {
+	projectID, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeProjectGetV1HandlerPathIDInvalid, apperrors.MsgProjectGetV1HandlerPathIDInvalid))
+		return
+	}
+	envID, err := parseUUID(r.PathValue("envId"))
+	if err != nil {
+		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeProjectGetV1HandlerPathIDInvalid, apperrors.MsgProjectGetV1HandlerPathIDInvalid))
+		return
+	}
+	if err := h.svc.DeleteEnv(r.Context(), projectID, envID); err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 type createProjectBody struct {
 	Name             string     `json:"name"`
 	Slug             string     `json:"slug"`
@@ -412,6 +494,17 @@ type createGalleryBody struct {
 
 func (b createGalleryBody) toInput() devprojectsvc.CreateGalleryInput {
 	return devprojectsvc.CreateGalleryInput(b)
+}
+
+type createEnvBody struct {
+	Key         string `json:"key"`
+	Value       string `json:"value"`
+	Environment string `json:"environment"`
+	Notes       string `json:"notes"`
+}
+
+func (b createEnvBody) toInput() devprojectsvc.CreateEnvInput {
+	return devprojectsvc.CreateEnvInput(b)
 }
 
 func parseUUID(raw string) (uuid.UUID, error) {
