@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/woragis/management/backend/server/internal/apperrors"
@@ -38,25 +39,45 @@ func New(repo *repository.Repository, media *mediasvc.Service, creatives *creati
 type CreateVideoInput struct {
 	Title                 string
 	Status                string
+	SeriesNumber          *int
+	TrackName             *string
+	ProblemTitle          *string
 	LeetcodeProblemNumber *int
 	LeetcodeSlug          *string
+	StudyPlanSlug         *string
 	Difficulty            *string
 	Topics                []string
+	ShortDescription      *string
+	LeetcodeProblemURL    *string
+	LeetcodeSubmissionURL *string
 	Notes                 *string
 	YoutubeURL            *string
+	ProblemDate           *time.Time
+	WhatsappEnabled       *bool
 }
 
 type UpdateVideoInput struct {
 	Title                 *string
 	Status                *string
+	SeriesNumber          *int
+	SeriesNumberSet       bool
+	TrackName             *string
+	ProblemTitle          *string
 	LeetcodeProblemNumber *int
 	LeetcodeProblemSet    bool
 	LeetcodeSlug          *string
+	StudyPlanSlug         *string
 	Difficulty            *string
 	Topics                []string
 	TopicsSet             bool
+	ShortDescription      *string
+	LeetcodeProblemURL    *string
+	LeetcodeSubmissionURL *string
 	Notes                 *string
 	YoutubeURL            *string
+	ProblemDate           *time.Time
+	ProblemDateSet        bool
+	WhatsappEnabled       *bool
 }
 
 func (s *Service) ListVideos(ctx context.Context) ([]models.LeetcodeVideo, error) {
@@ -96,12 +117,24 @@ func (s *Service) CreateVideo(ctx context.Context, in CreateVideoInput) (*models
 	row := &models.LeetcodeVideo{
 		Title:                 title,
 		Status:                status,
+		SeriesNumber:          in.SeriesNumber,
+		TrackName:             trimPtr(in.TrackName),
+		ProblemTitle:          trimPtr(in.ProblemTitle),
 		LeetcodeProblemNumber: in.LeetcodeProblemNumber,
 		LeetcodeSlug:          trimPtr(in.LeetcodeSlug),
+		StudyPlanSlug:         trimPtr(in.StudyPlanSlug),
 		Difficulty:            trimPtr(in.Difficulty),
 		Topics:                topicsJSON,
+		ShortDescription:      trimPtr(in.ShortDescription),
+		LeetcodeProblemURL:    trimPtr(in.LeetcodeProblemURL),
+		LeetcodeSubmissionURL: trimPtr(in.LeetcodeSubmissionURL),
 		Notes:                 trimPtr(in.Notes),
 		YoutubeURL:            trimPtr(in.YoutubeURL),
+		ProblemDate:           in.ProblemDate,
+		WhatsappEnabled:       true,
+	}
+	if in.WhatsappEnabled != nil {
+		row.WhatsappEnabled = *in.WhatsappEnabled
 	}
 	if err := s.repo.CreateVideo(ctx, row); err != nil {
 		return nil, apperrors.InternalCause(apperrors.CodeInternal, "create video", err)
@@ -124,11 +157,23 @@ func (s *Service) UpdateVideo(ctx context.Context, id uuid.UUID, in UpdateVideoI
 	if in.Status != nil {
 		row.Status = strings.TrimSpace(*in.Status)
 	}
+	if in.SeriesNumberSet {
+		row.SeriesNumber = in.SeriesNumber
+	}
+	if in.TrackName != nil {
+		row.TrackName = trimPtr(in.TrackName)
+	}
+	if in.ProblemTitle != nil {
+		row.ProblemTitle = trimPtr(in.ProblemTitle)
+	}
 	if in.LeetcodeProblemSet {
 		row.LeetcodeProblemNumber = in.LeetcodeProblemNumber
 	}
 	if in.LeetcodeSlug != nil {
 		row.LeetcodeSlug = trimPtr(in.LeetcodeSlug)
+	}
+	if in.StudyPlanSlug != nil {
+		row.StudyPlanSlug = trimPtr(in.StudyPlanSlug)
 	}
 	if in.Difficulty != nil {
 		row.Difficulty = trimPtr(in.Difficulty)
@@ -143,8 +188,23 @@ func (s *Service) UpdateVideo(ctx context.Context, id uuid.UUID, in UpdateVideoI
 	if in.Notes != nil {
 		row.Notes = trimPtr(in.Notes)
 	}
+	if in.ShortDescription != nil {
+		row.ShortDescription = trimPtr(in.ShortDescription)
+	}
+	if in.LeetcodeProblemURL != nil {
+		row.LeetcodeProblemURL = trimPtr(in.LeetcodeProblemURL)
+	}
+	if in.LeetcodeSubmissionURL != nil {
+		row.LeetcodeSubmissionURL = trimPtr(in.LeetcodeSubmissionURL)
+	}
 	if in.YoutubeURL != nil {
 		row.YoutubeURL = trimPtr(in.YoutubeURL)
+	}
+	if in.ProblemDateSet {
+		row.ProblemDate = in.ProblemDate
+	}
+	if in.WhatsappEnabled != nil {
+		row.WhatsappEnabled = *in.WhatsappEnabled
 	}
 	if err := s.repo.UpdateVideo(ctx, row); err != nil {
 		return nil, err

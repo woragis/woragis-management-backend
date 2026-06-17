@@ -122,6 +122,21 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("GET /v1/admin/content/leetcode/templates/{id}", admin(ch.getTemplate))
 		mux.Handle("PATCH /v1/admin/content/leetcode/templates/{id}", admin(ch.updateTemplate))
 		mux.Handle("DELETE /v1/admin/content/leetcode/templates/{id}", admin(ch.deleteTemplate))
+		mux.Handle("GET /v1/admin/content/leetcode/settings", admin(ch.getSettings))
+		mux.Handle("PATCH /v1/admin/content/leetcode/settings", admin(ch.updateSettings))
+		mux.Handle("GET /v1/admin/content/leetcode/whatsapp-templates", admin(ch.listWhatsappTemplates))
+		mux.Handle("PATCH /v1/admin/content/leetcode/whatsapp-templates/{id}", admin(ch.updateWhatsappTemplate))
+		mux.Handle("GET /v1/admin/content/leetcode/videos/{id}/whatsapp-preview", admin(ch.whatsappPreview))
+		mux.Handle("POST /v1/admin/content/leetcode/videos/{id}/whatsapp-send", admin(ch.whatsappSendNow))
 		mux.HandleFunc("POST /v1/webhooks/creatives", handleCreativesWebhook(app.Content))
+	}
+
+	if app.Content != nil && app.WorkerAPIKey != "" {
+		worker := func(h http.HandlerFunc) http.Handler {
+			return middleware.WorkerAuth(app.WorkerAPIKey, h)
+		}
+		mux.Handle("GET /v1/internal/content/leetcode/dispatch", worker(handleInternalDispatch(app.Content)))
+		mux.Handle("GET /v1/internal/content/leetcode/settings", worker(handleInternalSettings(app.Content)))
+		mux.Handle("PATCH /v1/internal/content/leetcode/videos/{id}/whatsapp-status", worker(handleInternalWhatsappStatus(app.Content)))
 	}
 }

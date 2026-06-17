@@ -13,6 +13,7 @@ import (
 type App struct {
 	DB           *gorm.DB
 	AdminAPIKey  string
+	WorkerAPIKey string
 	MediaBaseURL string
 	SecretsKey   []byte
 

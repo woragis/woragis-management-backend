@@ -3,6 +3,8 @@ package httpserver
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/woragis/management/backend/server/internal/apperrors"
@@ -290,52 +292,107 @@ func (h *contentHandler) deleteTemplate(w http.ResponseWriter, r *http.Request) 
 type leetcodeVideoBody struct {
 	Title                 string   `json:"title"`
 	Status                string   `json:"status"`
+	SeriesNumber          *int     `json:"seriesNumber"`
+	TrackName             *string  `json:"trackName"`
+	ProblemTitle          *string  `json:"problemTitle"`
 	LeetcodeProblemNumber *int     `json:"leetcodeProblemNumber"`
 	LeetcodeSlug          *string  `json:"leetcodeSlug"`
+	StudyPlanSlug         *string  `json:"studyPlanSlug"`
 	Difficulty            *string  `json:"difficulty"`
 	Topics                []string `json:"topics"`
+	ShortDescription      *string  `json:"shortDescription"`
+	LeetcodeProblemURL    *string  `json:"leetcodeProblemUrl"`
+	LeetcodeSubmissionURL *string  `json:"leetcodeSubmissionUrl"`
 	Notes                 *string  `json:"notes"`
 	YoutubeURL            *string  `json:"youtubeUrl"`
+	ProblemDate           *string  `json:"problemDate"`
+	WhatsappEnabled       *bool    `json:"whatsappEnabled"`
+}
+
+func parseProblemDate(s *string) *time.Time {
+	if s == nil || strings.TrimSpace(*s) == "" {
+		return nil
+	}
+	t, err := time.Parse("2006-01-02", strings.TrimSpace(*s))
+	if err != nil {
+		return nil
+	}
+	return &t
 }
 
 func (b leetcodeVideoBody) toCreate() contentsvc.CreateVideoInput {
 	return contentsvc.CreateVideoInput{
 		Title:                 b.Title,
 		Status:                b.Status,
+		SeriesNumber:          b.SeriesNumber,
+		TrackName:             b.TrackName,
+		ProblemTitle:          b.ProblemTitle,
 		LeetcodeProblemNumber: b.LeetcodeProblemNumber,
 		LeetcodeSlug:          b.LeetcodeSlug,
+		StudyPlanSlug:         b.StudyPlanSlug,
 		Difficulty:            b.Difficulty,
 		Topics:                b.Topics,
+		ShortDescription:      b.ShortDescription,
+		LeetcodeProblemURL:    b.LeetcodeProblemURL,
+		LeetcodeSubmissionURL: b.LeetcodeSubmissionURL,
 		Notes:                 b.Notes,
 		YoutubeURL:            b.YoutubeURL,
+		ProblemDate:           parseProblemDate(b.ProblemDate),
+		WhatsappEnabled:       b.WhatsappEnabled,
 	}
 }
 
 type leetcodeVideoUpdateBody struct {
 	Title                 *string  `json:"title"`
 	Status                *string  `json:"status"`
+	SeriesNumber          *int     `json:"seriesNumber"`
+	SeriesNumberSet       bool     `json:"seriesNumberSet"`
+	TrackName             *string  `json:"trackName"`
+	ProblemTitle          *string  `json:"problemTitle"`
 	LeetcodeProblemNumber *int     `json:"leetcodeProblemNumber"`
 	LeetcodeProblemSet    bool     `json:"leetcodeProblemSet"`
 	LeetcodeSlug          *string  `json:"leetcodeSlug"`
+	StudyPlanSlug         *string  `json:"studyPlanSlug"`
 	Difficulty            *string  `json:"difficulty"`
 	Topics                []string `json:"topics"`
 	TopicsSet             bool     `json:"topicsSet"`
+	ShortDescription      *string  `json:"shortDescription"`
+	LeetcodeProblemURL    *string  `json:"leetcodeProblemUrl"`
+	LeetcodeSubmissionURL *string  `json:"leetcodeSubmissionUrl"`
 	Notes                 *string  `json:"notes"`
 	YoutubeURL            *string  `json:"youtubeUrl"`
+	ProblemDate           *string  `json:"problemDate"`
+	ProblemDateSet        bool     `json:"problemDateSet"`
+	WhatsappEnabled       *bool    `json:"whatsappEnabled"`
 }
 
 func (b leetcodeVideoUpdateBody) toUpdate() contentsvc.UpdateVideoInput {
+	var problemDate *time.Time
+	if b.ProblemDateSet {
+		problemDate = parseProblemDate(b.ProblemDate)
+	}
 	return contentsvc.UpdateVideoInput{
 		Title:                 b.Title,
 		Status:                b.Status,
+		SeriesNumber:          b.SeriesNumber,
+		SeriesNumberSet:       b.SeriesNumberSet,
+		TrackName:             b.TrackName,
+		ProblemTitle:          b.ProblemTitle,
 		LeetcodeProblemNumber: b.LeetcodeProblemNumber,
 		LeetcodeProblemSet:    b.LeetcodeProblemSet,
 		LeetcodeSlug:          b.LeetcodeSlug,
+		StudyPlanSlug:         b.StudyPlanSlug,
 		Difficulty:            b.Difficulty,
 		Topics:                b.Topics,
 		TopicsSet:             b.TopicsSet,
+		ShortDescription:      b.ShortDescription,
+		LeetcodeProblemURL:    b.LeetcodeProblemURL,
+		LeetcodeSubmissionURL: b.LeetcodeSubmissionURL,
 		Notes:                 b.Notes,
 		YoutubeURL:            b.YoutubeURL,
+		ProblemDate:           problemDate,
+		ProblemDateSet:        b.ProblemDateSet,
+		WhatsappEnabled:       b.WhatsappEnabled,
 	}
 }
 

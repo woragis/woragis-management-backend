@@ -24,4 +24,16 @@ const (
 
 	CodeCreativesClientUnavailable = "CREATIVES_CLIENT_UNAVAILABLE"
 	MsgCreativesClientUnavailable  = "Creatives API is not configured"
+
+	CodeContentSettingsNotFound = "CONTENT_LEETCODE_SETTINGS_GET_V1_NOT_FOUND"
+	MsgContentSettingsNotFound  = "LeetCode channel settings not found"
+
+	CodeContentWhatsappTplNotFound = "CONTENT_WHATSAPP_TEMPLATE_GET_V1_NOT_FOUND"
+	MsgContentWhatsappTplNotFound  = "WhatsApp template not found"
+
+	CodeContentDispatchEmpty = "CONTENT_LEETCODE_DISPATCH_V1_EMPTY"
+	MsgContentDispatchEmpty  = "No message to dispatch for this request"
+
+	CodeWorkerAuthInvalid = "WORKER_AUTH_V1_INVALID"
+	MsgWorkerAuthInvalid  = "Invalid worker API key"
 )

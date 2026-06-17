@@ -90,6 +90,8 @@ func main() {
 		&models.LeetcodeVideo{},
 		&models.ContentThumbnail{},
 		&models.ContentPromptTemplate{},
+		&models.LeetcodeChannelSettings{},
+		&models.WhatsappMessageTemplate{},
 	); err != nil {
 		log.Fatalf("automigrate: %v", err)
 	}
@@ -131,9 +133,19 @@ func main() {
 		envOrDefault("CONTENT_THUMBNAIL_DEFAULT_SIZE", "1280x720"),
 	)
 
+	if err := contentSvc.EnsureWhatsappDefaults(context.Background()); err != nil {
+		log.Fatalf("whatsapp defaults: %v", err)
+	}
+
+	workerAPIKey := strings.TrimSpace(os.Getenv("WORKER_API_KEY"))
+	if workerAPIKey == "" {
+		log.Print("warning: WORKER_API_KEY not set; internal worker routes disabled")
+	}
+
 	app := &httpserver.App{
 		DB:           db,
 		AdminAPIKey:  adminKey,
+		WorkerAPIKey: workerAPIKey,
 		MediaBaseURL: mediaBaseURL,
 		SecretsKey:   loadSecretsKey(),
 		DevProjects:  devSvc,
