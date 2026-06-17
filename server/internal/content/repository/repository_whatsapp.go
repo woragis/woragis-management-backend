@@ -101,8 +101,10 @@ func (r *Repository) WhatsappTemplateExists(ctx context.Context, slug string) (b
 
 func (r *Repository) GetVideoByProblemDate(ctx context.Context, day time.Time) (*models.LeetcodeVideo, error) {
 	var row models.LeetcodeVideo
+	dayStart := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, day.Location())
+	dayEnd := dayStart.Add(24 * time.Hour)
 	err := r.db.WithContext(ctx).
-		Where("problem_date = ? AND whatsapp_enabled = ?", day.Format("2006-01-02"), true).
+		Where("problem_date >= ? AND problem_date < ? AND whatsapp_enabled = ?", dayStart, dayEnd, true).
 		Order("created_at DESC").
 		First(&row).Error
 	if err != nil {
