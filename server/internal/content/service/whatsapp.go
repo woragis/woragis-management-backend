@@ -9,6 +9,7 @@ import (
 	"github.com/woragis/management/backend/server/internal/apperrors"
 	"github.com/woragis/management/backend/server/internal/content/templaterender"
 	"github.com/woragis/management/backend/server/internal/models"
+	"github.com/woragis/management/backend/server/internal/whatsappworkerclient"
 )
 
 func defaultWhatsappTemplates() []models.WhatsappMessageTemplate {
@@ -409,6 +410,55 @@ func (s *Service) SendWhatsappNow(ctx context.Context, videoID uuid.UUID, dispat
 	if res.Skip {
 		return res, nil
 	}
-	// Mark as pending for worker pickup via separate trigger - for admin "send now" we return message for worker proxy
+	if s.whatsappWorker == nil || !s.whatsappWorker.Enabled() {
+		return nil, apperrors.Invalid(apperrors.CodeWhatsappWorkerUnavailable, apperrors.MsgWhatsappWorkerUnavailable)
+	}
+	if err := s.whatsappWorker.Send(ctx, whatsappworkerclient.SendRequest{
+		Message:      res.Message,
+		Type:         dispatchType,
+		VideoID:      res.VideoID,
+		TemplateSlug: res.TemplateSlug,
+	}); err != nil {
+		return nil, apperrors.InternalCause(apperrors.CodeInternal, "send whatsapp", err)
+	}
+	if res.VideoID != "" {
+		patch := WhatsappStatusPatch{}
+		switch dispatchType {
+		case "problem":
+			patch.ProblemSent = true
+		case "discussion":
+			patch.DiscussionSent = true
+		case "solution":
+			patch.SolutionSent = true
+		}
+		if err := s.PatchWhatsappStatus(ctx, video.ID, patch); err != nil {
+			return nil, err
+		}
+	}
 	return res, nil
+}
+
+func (s *Service) WhatsappWorkerStatus(ctx context.Context) (map[string]any, error) {
+	if s.whatsappWorker == nil || !s.whatsappWorker.Enabled() {
+		return map[string]any{"configured": false, "connected": false}, nil
+	}
+	st, err := s.whatsappWorker.Status(ctx)
+	if err != nil {
+		return nil, apperrors.InternalCause(apperrors.CodeInternal, "whatsapp worker status", err)
+	}
+	return map[string]any{"configured": true, "connected": st.Connected}, nil
+}
+
+func (s *Service) WhatsappWorkerQR(ctx context.Context) (map[string]any, error) {
+	if s.whatsappWorker == nil || !s.whatsappWorker.Enabled() {
+		return nil, apperrors.Invalid(apperrors.CodeWhatsappWorkerUnavailable, apperrors.MsgWhatsappWorkerUnavailable)
+	}
+	qr, err := s.whatsappWorker.QR(ctx)
+	if err != nil {
+		return nil, apperrors.InternalCause(apperrors.CodeInternal, "whatsapp worker qr", err)
+	}
+	if qr == nil || qr.QR == "" {
+		return map[string]any{"qr": nil}, nil
+	}
+	return map[string]any{"qr": qr.QR}, nil
 }

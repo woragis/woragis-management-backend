@@ -11,19 +11,21 @@ import (
 	"github.com/woragis/management/backend/server/internal/apperrors"
 	"github.com/woragis/management/backend/server/internal/content/repository"
 	"github.com/woragis/management/backend/server/internal/creativesclient"
+	"github.com/woragis/management/backend/server/internal/whatsappworkerclient"
 	mediasvc "github.com/woragis/management/backend/server/internal/media/service"
 	"github.com/woragis/management/backend/server/internal/models"
 )
 
 type Service struct {
-	repo            *repository.Repository
-	media           *mediasvc.Service
-	creatives       *creativesclient.Client
-	webhookURL      string
+	repo             *repository.Repository
+	media            *mediasvc.Service
+	creatives        *creativesclient.Client
+	whatsappWorker   *whatsappworkerclient.Client
+	webhookURL       string
 	defaultThumbSize string
 }
 
-func New(repo *repository.Repository, media *mediasvc.Service, creatives *creativesclient.Client, webhookURL, defaultThumbSize string) *Service {
+func New(repo *repository.Repository, media *mediasvc.Service, creatives *creativesclient.Client, whatsappWorker *whatsappworkerclient.Client, webhookURL, defaultThumbSize string) *Service {
 	if defaultThumbSize == "" {
 		defaultThumbSize = "1280x720"
 	}
@@ -31,6 +33,7 @@ func New(repo *repository.Repository, media *mediasvc.Service, creatives *creati
 		repo:             repo,
 		media:            media,
 		creatives:        creatives,
+		whatsappWorker:   whatsappWorker,
 		webhookURL:       strings.TrimSpace(webhookURL),
 		defaultThumbSize: defaultThumbSize,
 	}

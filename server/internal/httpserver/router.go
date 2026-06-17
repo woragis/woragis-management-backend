@@ -128,6 +128,8 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("PATCH /v1/admin/content/leetcode/whatsapp-templates/{id}", admin(ch.updateWhatsappTemplate))
 		mux.Handle("GET /v1/admin/content/leetcode/videos/{id}/whatsapp-preview", admin(ch.whatsappPreview))
 		mux.Handle("POST /v1/admin/content/leetcode/videos/{id}/whatsapp-send", admin(ch.whatsappSendNow))
+		mux.Handle("GET /v1/admin/content/leetcode/whatsapp/status", admin(ch.whatsappWorkerStatus))
+		mux.Handle("GET /v1/admin/content/leetcode/whatsapp/qr", admin(ch.whatsappWorkerQR))
 		mux.HandleFunc("POST /v1/webhooks/creatives", handleCreativesWebhook(app.Content))
 	}
 

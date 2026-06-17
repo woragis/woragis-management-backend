@@ -19,6 +19,7 @@ import (
 	contentrepo "github.com/woragis/management/backend/server/internal/content/repository"
 	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
 	"github.com/woragis/management/backend/server/internal/creativesclient"
+	"github.com/woragis/management/backend/server/internal/whatsappworkerclient"
 	financerepo "github.com/woragis/management/backend/server/internal/finance/repository"
 	financesvc "github.com/woragis/management/backend/server/internal/finance/service"
 	mediarepo "github.com/woragis/management/backend/server/internal/media/repository"
@@ -124,11 +125,15 @@ func main() {
 		BaseURL: os.Getenv("CREATIVES_API_URL"),
 		APIKey:  os.Getenv("CREATIVES_API_KEY"),
 	})
+	whatsappWorkerClient := whatsappworkerclient.New(whatsappworkerclient.Config{
+		BaseURL: os.Getenv("WHATSAPP_WORKER_URL"),
+	})
 	contentRepo := contentrepo.New(db)
 	contentSvc := contentsvc.New(
 		contentRepo,
 		mediaSvc,
 		creativesClient,
+		whatsappWorkerClient,
 		strings.TrimSpace(os.Getenv("MANAGEMENT_WEBHOOK_URL")),
 		envOrDefault("CONTENT_THUMBNAIL_DEFAULT_SIZE", "1280x720"),
 	)

@@ -101,6 +101,24 @@ func (h *contentHandler) whatsappSendNow(w http.ResponseWriter, r *http.Request)
 	apperrors.WriteJSON(w, http.StatusOK, res)
 }
 
+func (h *contentHandler) whatsappWorkerStatus(w http.ResponseWriter, r *http.Request) {
+	res, err := h.svc.WhatsappWorkerStatus(r.Context())
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	apperrors.WriteJSON(w, http.StatusOK, res)
+}
+
+func (h *contentHandler) whatsappWorkerQR(w http.ResponseWriter, r *http.Request) {
+	res, err := h.svc.WhatsappWorkerQR(r.Context())
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	apperrors.WriteJSON(w, http.StatusOK, res)
+}
+
 type settingsUpdateBody struct {
 	Timezone             *string `json:"timezone"`
 	ProblemPostTime      *string `json:"problemPostTime"`

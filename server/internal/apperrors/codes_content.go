@@ -25,6 +25,9 @@ const (
 	CodeCreativesClientUnavailable = "CREATIVES_CLIENT_UNAVAILABLE"
 	MsgCreativesClientUnavailable  = "Creatives API is not configured"
 
+	CodeWhatsappWorkerUnavailable = "WHATSAPP_WORKER_UNAVAILABLE"
+	MsgWhatsappWorkerUnavailable  = "WhatsApp worker is not configured"
+
 	CodeContentSettingsNotFound = "CONTENT_LEETCODE_SETTINGS_GET_V1_NOT_FOUND"
 	MsgContentSettingsNotFound  = "LeetCode channel settings not found"
 
