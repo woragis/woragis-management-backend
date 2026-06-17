@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
+	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
 	financesvc "github.com/woragis/management/backend/server/internal/finance/service"
 	mediarepo "github.com/woragis/management/backend/server/internal/media/repository"
 	mediasvc "github.com/woragis/management/backend/server/internal/media/service"
@@ -17,6 +18,7 @@ type App struct {
 
 	DevProjects *devprojectsvc.Service
 	Finance     *financesvc.Service
+	Content     *contentsvc.Service
 	Media       *mediasvc.Service
 	MediaRepo   *mediarepo.Repository
 	Profile     *profilesvc.Service

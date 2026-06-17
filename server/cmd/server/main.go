@@ -16,6 +16,9 @@ import (
 	"github.com/woragis/management/backend/server/internal/models"
 	devprojectrepo "github.com/woragis/management/backend/server/internal/devproject/repository"
 	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
+	contentrepo "github.com/woragis/management/backend/server/internal/content/repository"
+	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
+	"github.com/woragis/management/backend/server/internal/creativesclient"
 	financerepo "github.com/woragis/management/backend/server/internal/finance/repository"
 	financesvc "github.com/woragis/management/backend/server/internal/finance/service"
 	mediarepo "github.com/woragis/management/backend/server/internal/media/repository"
@@ -84,6 +87,9 @@ func main() {
 		&models.BudgetPlan{},
 		&models.MediaAsset{},
 		&models.Profile{},
+		&models.LeetcodeVideo{},
+		&models.ContentThumbnail{},
+		&models.ContentPromptTemplate{},
 	); err != nil {
 		log.Fatalf("automigrate: %v", err)
 	}
@@ -112,6 +118,19 @@ func main() {
 		log.Fatalf("default profile: %v", err)
 	}
 
+	creativesClient := creativesclient.New(creativesclient.Config{
+		BaseURL: os.Getenv("CREATIVES_API_URL"),
+		APIKey:  os.Getenv("CREATIVES_API_KEY"),
+	})
+	contentRepo := contentrepo.New(db)
+	contentSvc := contentsvc.New(
+		contentRepo,
+		mediaSvc,
+		creativesClient,
+		strings.TrimSpace(os.Getenv("MANAGEMENT_WEBHOOK_URL")),
+		envOrDefault("CONTENT_THUMBNAIL_DEFAULT_SIZE", "1280x720"),
+	)
+
 	app := &httpserver.App{
 		DB:           db,
 		AdminAPIKey:  adminKey,
@@ -122,6 +141,7 @@ func main() {
 		Media:        mediaSvc,
 		MediaRepo:    mediaRepo,
 		Profile:      profileSvc,
+		Content:      contentSvc,
 	}
 
 	cfg := middleware.LoadConfigFromEnv()
@@ -157,4 +177,11 @@ func loadSecretsKey() []byte {
 		return nil
 	}
 	return []byte(raw)
+}
+
+func envOrDefault(key, def string) string {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		return v
+	}
+	return def
 }

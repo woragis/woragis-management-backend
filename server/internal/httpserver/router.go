@@ -102,4 +102,26 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("PATCH /v1/admin/finance/budgets/{id}", admin(fh.updateBudget))
 		mux.Handle("DELETE /v1/admin/finance/budgets/{id}", admin(fh.deleteBudget))
 	}
+
+	if app.Content != nil {
+		ch := newContentHandler(app.Content)
+		mux.Handle("GET /v1/admin/content/leetcode/videos", admin(ch.listVideos))
+		mux.Handle("POST /v1/admin/content/leetcode/videos", admin(ch.createVideo))
+		mux.Handle("GET /v1/admin/content/leetcode/videos/{id}", admin(ch.getVideo))
+		mux.Handle("PATCH /v1/admin/content/leetcode/videos/{id}", admin(ch.updateVideo))
+		mux.Handle("DELETE /v1/admin/content/leetcode/videos/{id}", admin(ch.deleteVideo))
+		mux.Handle("GET /v1/admin/content/leetcode/videos/{id}/thumbnails", admin(ch.listThumbnails))
+		mux.Handle("POST /v1/admin/content/leetcode/videos/{id}/thumbnails", admin(ch.createThumbnail))
+		mux.Handle("GET /v1/admin/content/leetcode/videos/{id}/thumbnails/{thumbnailId}", admin(ch.getThumbnail))
+		mux.Handle("PATCH /v1/admin/content/leetcode/videos/{id}/thumbnails/{thumbnailId}", admin(ch.updateThumbnail))
+		mux.Handle("DELETE /v1/admin/content/leetcode/videos/{id}/thumbnails/{thumbnailId}", admin(ch.deleteThumbnail))
+		mux.Handle("POST /v1/admin/content/leetcode/videos/{id}/thumbnails/{thumbnailId}/generate", admin(ch.generateThumbnail))
+		mux.Handle("POST /v1/admin/content/leetcode/videos/{id}/thumbnails/{thumbnailId}/approve", admin(ch.approveThumbnail))
+		mux.Handle("GET /v1/admin/content/leetcode/templates", admin(ch.listTemplates))
+		mux.Handle("POST /v1/admin/content/leetcode/templates", admin(ch.createTemplate))
+		mux.Handle("GET /v1/admin/content/leetcode/templates/{id}", admin(ch.getTemplate))
+		mux.Handle("PATCH /v1/admin/content/leetcode/templates/{id}", admin(ch.updateTemplate))
+		mux.Handle("DELETE /v1/admin/content/leetcode/templates/{id}", admin(ch.deleteTemplate))
+		mux.HandleFunc("POST /v1/webhooks/creatives", handleCreativesWebhook(app.Content))
+	}
 }
