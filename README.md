@@ -23,6 +23,12 @@ go run ./cmd/server
 
 Health: `GET http://127.0.0.1:8080/health`
 
+## Railway / production
+
+- The server listens on `HTTP_ADDR` if set, otherwise **`PORT`** (injected by Railway), else `:8080`.
+- Do **not** hardcode `HTTP_ADDR=:8080` in production if the platform sets `PORT`.
+- `CORS_ALLOWED_ORIGINS` must list exact origins **without quotes**, e.g. `https://management.woragis.me,https://www.woragis.me`.
+
 ## Docker (full stack)
 
 ```bash

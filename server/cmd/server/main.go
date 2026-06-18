@@ -14,6 +14,7 @@ import (
 	"github.com/woragis/management/backend/server/internal/middleware"
 	"github.com/woragis/management/backend/server/internal/migrate"
 	"github.com/woragis/management/backend/server/internal/models"
+	"github.com/woragis/management/backend/server/internal/platform/listen"
 	devprojectrepo "github.com/woragis/management/backend/server/internal/devproject/repository"
 	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
 	contentrepo "github.com/woragis/management/backend/server/internal/content/repository"
@@ -31,10 +32,7 @@ import (
 )
 
 func main() {
-	addr := os.Getenv("HTTP_ADDR")
-	if addr == "" {
-		addr = ":8080"
-	}
+	addr := listen.Addr()
 
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {

@@ -15,6 +15,5 @@ COPY --from=build /out/api /usr/local/bin/api
 COPY --from=build /out/migrate /usr/local/bin/migrate
 COPY migrations /migrations
 ENV MIGRATIONS_DIR=/migrations
-ENV HTTP_ADDR=:8080
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/api"]

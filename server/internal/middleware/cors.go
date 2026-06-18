@@ -30,8 +30,12 @@ func CORS(cfg Config, next http.Handler) http.Handler {
 			}
 		}
 		if r.Method == http.MethodOptions {
-			if origin != "" && w.Header().Get("Access-Control-Allow-Origin") != "" {
-				w.WriteHeader(http.StatusNoContent)
+			if origin != "" {
+				if w.Header().Get("Access-Control-Allow-Origin") != "" {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+				http.Error(w, "origin not allowed", http.StatusForbidden)
 				return
 			}
 			if strings.HasPrefix(r.URL.Path, "/v1/") {
