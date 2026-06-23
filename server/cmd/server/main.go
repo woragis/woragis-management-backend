@@ -22,6 +22,9 @@ import (
 	personalitycache "github.com/woragis/management/backend/server/internal/agent/personality/cache"
 	personalityrepo "github.com/woragis/management/backend/server/internal/agent/personality/repository"
 	personalitysvc "github.com/woragis/management/backend/server/internal/agent/personality/service"
+	messagingrepo "github.com/woragis/management/backend/server/internal/messaging/repository"
+	messagingsvc "github.com/woragis/management/backend/server/internal/messaging/service"
+	"github.com/woragis/management/backend/server/internal/messaging/executor"
 	contentrepo "github.com/woragis/management/backend/server/internal/content/repository"
 	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
 	"github.com/woragis/management/backend/server/internal/creativesclient"
@@ -99,6 +102,10 @@ func main() {
 		&models.Contact{},
 		&models.ContactInteraction{},
 		&models.AgentPersonality{},
+		&models.ChannelDestination{},
+		&models.MessageTemplate{},
+		&models.ScheduledJob{},
+		&models.MessageDelivery{},
 	); err != nil {
 		log.Fatalf("automigrate: %v", err)
 	}
@@ -172,6 +179,10 @@ func main() {
 		log.Fatalf("whatsapp defaults: %v", err)
 	}
 
+	messagingRepo := messagingrepo.New(db)
+	messagingSvc := messagingsvc.New(messagingRepo)
+	schedulerExec := executor.New(messagingSvc, contentSvc, whatsappWorkerClient)
+
 	workerAPIKey := strings.TrimSpace(os.Getenv("WORKER_API_KEY"))
 	if workerAPIKey == "" {
 		log.Print("warning: WORKER_API_KEY not set; internal worker routes disabled")
@@ -197,6 +208,8 @@ func main() {
 		Profile:      profileSvc,
 		Content:      contentSvc,
 		Personality:  personalitySvc,
+		Messaging:    messagingSvc,
+		Scheduler:    schedulerExec,
 	}
 
 	cfg := middleware.LoadConfigFromEnv()

@@ -154,6 +154,34 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("PATCH /v1/internal/content/leetcode/videos/{id}/whatsapp-status", worker(handleInternalWhatsappStatus(app.Content)))
 	}
 
+	if app.Messaging != nil {
+		mh := newMessagingHandler(app.Messaging)
+		mux.Handle("GET /v1/admin/messaging/destinations", admin(mh.listDestinations))
+		mux.Handle("POST /v1/admin/messaging/destinations", admin(mh.createDestination))
+		mux.Handle("GET /v1/admin/messaging/destinations/{id}", admin(mh.getDestination))
+		mux.Handle("PATCH /v1/admin/messaging/destinations/{id}", admin(mh.updateDestination))
+		mux.Handle("DELETE /v1/admin/messaging/destinations/{id}", admin(mh.deleteDestination))
+		mux.Handle("GET /v1/admin/messaging/templates", admin(mh.listTemplates))
+		mux.Handle("POST /v1/admin/messaging/templates", admin(mh.createTemplate))
+		mux.Handle("GET /v1/admin/messaging/templates/{id}", admin(mh.getTemplate))
+		mux.Handle("PATCH /v1/admin/messaging/templates/{id}", admin(mh.updateTemplate))
+		mux.Handle("DELETE /v1/admin/messaging/templates/{id}", admin(mh.deleteTemplate))
+		mux.Handle("GET /v1/admin/messaging/jobs", admin(mh.listJobs))
+		mux.Handle("POST /v1/admin/messaging/jobs", admin(mh.createJob))
+		mux.Handle("GET /v1/admin/messaging/jobs/{id}", admin(mh.getJob))
+		mux.Handle("PATCH /v1/admin/messaging/jobs/{id}", admin(mh.updateJob))
+		mux.Handle("DELETE /v1/admin/messaging/jobs/{id}", admin(mh.deleteJob))
+		mux.Handle("GET /v1/admin/messaging/deliveries", admin(mh.listDeliveries))
+	}
+
+	if app.Messaging != nil && app.Scheduler != nil && app.WorkerAPIKey != "" {
+		worker := func(h http.HandlerFunc) http.Handler {
+			return middleware.WorkerAuth(app.WorkerAPIKey, h)
+		}
+		mux.Handle("GET /v1/internal/scheduler/due", worker(handleSchedulerDue(app.Messaging)))
+		mux.Handle("POST /v1/internal/scheduler/jobs/{id}/execute", worker(handleSchedulerExecute(app.Scheduler)))
+	}
+
 	if app.Personality != nil {
 		ph := newAgentPersonalityHandler(app.Personality)
 		mux.Handle("GET /v1/admin/agent/personality", admin(ph.get))

@@ -32,10 +32,12 @@ func (c *Client) Enabled() bool {
 }
 
 type SendRequest struct {
-	Message      string `json:"message,omitempty"`
-	Type         string `json:"type,omitempty"`
-	VideoID      string `json:"videoId,omitempty"`
-	TemplateSlug string `json:"templateSlug,omitempty"`
+	Message       string `json:"message,omitempty"`
+	ExternalID    string `json:"externalId,omitempty"`
+	DestinationID string `json:"destinationId,omitempty"`
+	Type          string `json:"type,omitempty"`
+	VideoID       string `json:"videoId,omitempty"`
+	TemplateSlug  string `json:"templateSlug,omitempty"`
 }
 
 type StatusResponse struct {
