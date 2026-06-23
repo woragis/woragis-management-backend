@@ -2,6 +2,8 @@
 
 Go API following the Lingo pattern: handler → service → repository.
 
+**Planos detalhados (agente, contatos, finanças, personalidade):** [docs/plans/README.md](./plans/README.md)
+
 ## Domains
 
 | Domain | Purpose |
@@ -9,6 +11,15 @@ Go API following the Lingo pattern: handler → service → repository.
 | `devproject` | Programming projects, links, domains, secrets |
 | `media` | Image/file upload and public URLs |
 | `profile` | Landing page hero / about (singleton) |
+| `finance` | Income, expenses, transactions, invoices, budgets |
+| `content` | LeetCode videos, thumbnails, WhatsApp templates |
+
+### Planned
+
+| Domain | Doc |
+|--------|-----|
+| `contacts` | [plans/02-contacts-domain.md](./plans/02-contacts-domain.md) |
+| `agent` (personality, tools) | [plans/04-agent-personality.md](./plans/04-agent-personality.md) |
 
 ## API surfaces
 
@@ -17,6 +28,9 @@ Go API following the Lingo pattern: handler → service → repository.
 | `/health`, `/ready` | none | Probes |
 | `/v1/admin/*` | `X-Admin-Key` | Full CRUD (management frontend) |
 | `/v1/public/*` | none | Read-only data for landing page |
+| `/v1/internal/content/leetcode/*` | `X-Worker-Key` | WhatsApp worker (LeetCode dispatch) |
+| `/v1/internal/agent/*` | `AGENT_API_KEY` | Planned — agent tools |
+| `/v1/webhooks/creatives` | none | Creatives thumbnail callback |
 
 ## Layout
 
@@ -35,7 +49,11 @@ backend/
 │       ├── platform/postgres/
 │       ├── devproject/
 │       ├── media/
-│       └── profile/
+│       ├── profile/
+│       ├── finance/
+│       └── content/
+├── agent-worker/     # planned — see docs/plans/
+├── whatsapp-worker/
 └── docker-compose.yml
 ```
 
