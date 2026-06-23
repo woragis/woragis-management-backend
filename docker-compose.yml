@@ -107,6 +107,33 @@ services:
       timeout: 3s
       retries: 10
 
+  agent-worker:
+    build:
+      context: ./agent-worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3002
+      MANAGEMENT_API_URL: http://api:8080
+      AGENT_API_KEY: ${AGENT_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_ALLOWED_USER_IDS: ${TELEGRAM_ALLOWED_USER_IDS:-}
+    ports:
+      - "127.0.0.1:3002:3002"
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3002/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
   whatsapp-worker:
     build:
       context: ./whatsapp-worker
