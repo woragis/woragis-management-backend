@@ -87,6 +87,20 @@ func (e *Executor) ExecuteJob(ctx context.Context, jobID uuid.UUID) (*ExecuteRes
 	if status == "failed" {
 		return nil, apperrors.InternalErr(apperrors.CodeInternal, errMsg)
 	}
+	if externalRef != "" && e.content != nil && isLeetcodeDispatchType(strings.TrimSpace(job.ProgramAction)) {
+		if vid, err := uuid.Parse(externalRef); err == nil {
+			patch := contentsvc.WhatsappStatusPatch{}
+			switch strings.TrimSpace(job.ProgramAction) {
+			case "problem":
+				patch.ProblemSent = true
+			case "discussion":
+				patch.DiscussionSent = true
+			case "solution":
+				patch.SolutionSent = true
+			}
+			_ = e.content.PatchWhatsappStatus(ctx, vid, patch)
+		}
+	}
 	return &ExecuteResult{
 		JobID:      jobID,
 		Message:    message,

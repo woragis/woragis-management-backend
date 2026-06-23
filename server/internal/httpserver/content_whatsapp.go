@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/woragis/management/backend/server/internal/apperrors"
 	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
 )
@@ -87,13 +88,32 @@ func (h *contentHandler) whatsappSendNow(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	var body struct {
-		Type string `json:"type"`
+		Type          string `json:"type"`
+		DestinationID string `json:"destinationId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeInternal, "Request body is invalid."))
 		return
 	}
-	res, err := h.svc.SendWhatsappNow(r.Context(), id, body.Type)
+	if body.DestinationID == "" {
+		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeInternal, "destinationId is required."))
+		return
+	}
+	destID, err := uuid.Parse(body.DestinationID)
+	if err != nil {
+		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeInternal, "Invalid destinationId."))
+		return
+	}
+	if h.messaging == nil {
+		apperrors.WriteError(w, apperrors.InternalErr(apperrors.CodeInternal, "Messaging service unavailable."))
+		return
+	}
+	dest, err := h.messaging.GetDestination(r.Context(), destID)
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	res, err := h.svc.SendWhatsappNow(r.Context(), id, body.Type, dest.ExternalID, dest.ID.String())
 	if err != nil {
 		apperrors.WriteError(w, err)
 		return

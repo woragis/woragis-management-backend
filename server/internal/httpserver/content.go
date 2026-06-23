@@ -9,14 +9,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/woragis/management/backend/server/internal/apperrors"
 	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
+	messagingsvc "github.com/woragis/management/backend/server/internal/messaging/service"
 )
 
 type contentHandler struct {
-	svc *contentsvc.Service
+	svc       *contentsvc.Service
+	messaging *messagingsvc.Service
 }
 
-func newContentHandler(svc *contentsvc.Service) *contentHandler {
-	return &contentHandler{svc: svc}
+func newContentHandler(svc *contentsvc.Service, messaging *messagingsvc.Service) *contentHandler {
+	return &contentHandler{svc: svc, messaging: messaging}
 }
 
 func (h *contentHandler) listVideos(w http.ResponseWriter, r *http.Request) {

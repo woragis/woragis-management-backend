@@ -116,7 +116,7 @@ func Mount(mux *http.ServeMux, app *App) {
 	}
 
 	if app.Content != nil {
-		ch := newContentHandler(app.Content)
+		ch := newContentHandler(app.Content, app.Messaging)
 		mux.Handle("GET /v1/admin/content/leetcode/videos", admin(ch.listVideos))
 		mux.Handle("POST /v1/admin/content/leetcode/videos", admin(ch.createVideo))
 		mux.Handle("GET /v1/admin/content/leetcode/videos/{id}", admin(ch.getVideo))

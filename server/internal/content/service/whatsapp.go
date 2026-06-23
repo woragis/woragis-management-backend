@@ -380,7 +380,10 @@ func (s *Service) PatchWhatsappStatus(ctx context.Context, videoID uuid.UUID, pa
 	return s.repo.UpdateVideo(ctx, video)
 }
 
-func (s *Service) SendWhatsappNow(ctx context.Context, videoID uuid.UUID, dispatchType string) (*DispatchResult, error) {
+func (s *Service) SendWhatsappNow(ctx context.Context, videoID uuid.UUID, dispatchType, externalID, destinationID string) (*DispatchResult, error) {
+	if strings.TrimSpace(externalID) == "" {
+		return nil, apperrors.Invalid(apperrors.CodeInternal, "externalId is required.")
+	}
 	settings, err := s.repo.EnsureSettings(ctx)
 	if err != nil {
 		return nil, err
@@ -414,10 +417,12 @@ func (s *Service) SendWhatsappNow(ctx context.Context, videoID uuid.UUID, dispat
 		return nil, apperrors.Invalid(apperrors.CodeWhatsappWorkerUnavailable, apperrors.MsgWhatsappWorkerUnavailable)
 	}
 	if err := s.whatsappWorker.Send(ctx, whatsappworkerclient.SendRequest{
-		Message:      res.Message,
-		Type:         dispatchType,
-		VideoID:      res.VideoID,
-		TemplateSlug: res.TemplateSlug,
+		Message:       res.Message,
+		ExternalID:    externalID,
+		DestinationID: destinationID,
+		Type:          dispatchType,
+		VideoID:       res.VideoID,
+		TemplateSlug:  res.TemplateSlug,
 	}); err != nil {
 		return nil, apperrors.InternalCause(apperrors.CodeInternal, "send whatsapp", err)
 	}

@@ -62,7 +62,6 @@ export async function getEnabledGroupJid(cfg: Config): Promise<string | null> {
     `SELECT jid FROM whatsapp_groups WHERE enabled = true ORDER BY created_at ASC LIMIT 1`,
   )
   if (res.rows[0]?.jid) return res.rows[0].jid
-  if (cfg.defaultGroupJid) return cfg.defaultGroupJid
   return null
 }
 

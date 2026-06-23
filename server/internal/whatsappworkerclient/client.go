@@ -12,18 +12,21 @@ import (
 )
 
 type Client struct {
-	baseURL string
-	hc      *http.Client
+	baseURL      string
+	workerAPIKey string
+	hc           *http.Client
 }
 
 type Config struct {
-	BaseURL string
+	BaseURL      string
+	WorkerAPIKey string
 }
 
 func New(cfg Config) *Client {
 	return &Client{
-		baseURL: strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/"),
-		hc:      &http.Client{Timeout: 60 * time.Second},
+		baseURL:      strings.TrimRight(strings.TrimSpace(cfg.BaseURL), "/"),
+		workerAPIKey: strings.TrimSpace(cfg.WorkerAPIKey),
+		hc:           &http.Client{Timeout: 60 * time.Second},
 	}
 }
 
@@ -61,6 +64,10 @@ func (c *Client) Send(ctx context.Context, req SendRequest) error {
 		return err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
+	if c.workerAPIKey != "" {
+		httpReq.Header.Set("X-Worker-Key", c.workerAPIKey)
+		httpReq.Header.Set("Authorization", "Bearer "+c.workerAPIKey)
+	}
 	res, err := c.hc.Do(httpReq)
 	if err != nil {
 		return err

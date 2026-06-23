@@ -163,7 +163,8 @@ func main() {
 		APIKey:  os.Getenv("CREATIVES_API_KEY"),
 	})
 	whatsappWorkerClient := whatsappworkerclient.New(whatsappworkerclient.Config{
-		BaseURL: os.Getenv("WHATSAPP_WORKER_URL"),
+		BaseURL:      os.Getenv("WHATSAPP_WORKER_URL"),
+		WorkerAPIKey: os.Getenv("WORKER_API_KEY"),
 	})
 	contentRepo := contentrepo.New(db)
 	contentSvc := contentsvc.New(
