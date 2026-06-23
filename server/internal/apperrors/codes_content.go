@@ -39,4 +39,7 @@ const (
 
 	CodeWorkerAuthInvalid = "WORKER_AUTH_V1_INVALID"
 	MsgWorkerAuthInvalid  = "Invalid worker API key"
+
+	CodeAgentAuthInvalid = "AGENT_AUTH_V1_INVALID"
+	MsgAgentAuthInvalid  = "Invalid agent API key"
 )

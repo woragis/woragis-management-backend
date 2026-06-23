@@ -9,6 +9,7 @@ volumes:
   postgres_whatsapp_data:
   media_data:
   whatsapp_session_data:
+  redis_data:
 
 services:
   postgres:
@@ -45,6 +46,20 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   api:
     build:
       context: .
@@ -71,6 +86,8 @@ services:
       CREATIVES_API_URL: ${CREATIVES_API_URL:-}
       CREATIVES_API_KEY: ${CREATIVES_API_KEY:-}
       WORKER_API_KEY: ${WORKER_API_KEY:-}
+      AGENT_API_KEY: ${AGENT_API_KEY:-}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       WHATSAPP_WORKER_URL: ${WHATSAPP_WORKER_URL:-http://whatsapp-worker:3001}
       CONTENT_THUMBNAIL_DEFAULT_SIZE: ${CONTENT_THUMBNAIL_DEFAULT_SIZE:-1280x720}
     volumes:
@@ -79,6 +96,8 @@ services:
       - "127.0.0.1:8080:8080"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - internal

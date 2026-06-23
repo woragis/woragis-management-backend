@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
+	personalitysvc "github.com/woragis/management/backend/server/internal/agent/personality/service"
 	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
 	contactssvc "github.com/woragis/management/backend/server/internal/contacts/service"
 	financesvc "github.com/woragis/management/backend/server/internal/finance/service"
@@ -14,6 +15,7 @@ import (
 type App struct {
 	DB           *gorm.DB
 	AdminAPIKey  string
+	AgentAPIKey  string
 	WorkerAPIKey string
 	MediaBaseURL string
 	SecretsKey   []byte
@@ -25,4 +27,5 @@ type App struct {
 	Media       *mediasvc.Service
 	MediaRepo   *mediarepo.Repository
 	Profile     *profilesvc.Service
+	Personality *personalitysvc.Service
 }

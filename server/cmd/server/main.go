@@ -19,6 +19,9 @@ import (
 	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
 	contactsrepo "github.com/woragis/management/backend/server/internal/contacts/repository"
 	contactssvc "github.com/woragis/management/backend/server/internal/contacts/service"
+	personalitycache "github.com/woragis/management/backend/server/internal/agent/personality/cache"
+	personalityrepo "github.com/woragis/management/backend/server/internal/agent/personality/repository"
+	personalitysvc "github.com/woragis/management/backend/server/internal/agent/personality/service"
 	contentrepo "github.com/woragis/management/backend/server/internal/content/repository"
 	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
 	"github.com/woragis/management/backend/server/internal/creativesclient"
@@ -95,6 +98,7 @@ func main() {
 		&models.WhatsappMessageTemplate{},
 		&models.Contact{},
 		&models.ContactInteraction{},
+		&models.AgentPersonality{},
 	); err != nil {
 		log.Fatalf("automigrate: %v", err)
 	}
@@ -108,6 +112,26 @@ func main() {
 	contactsRepo := contactsrepo.New(db)
 	contactsSvc := contactssvc.New(contactsRepo)
 	financeSvc.SetContactValidator(contactsSvc)
+
+	var personalityCache personalitycache.Store = personalitycache.Noop{}
+	if redisURL := strings.TrimSpace(os.Getenv("REDIS_URL")); redisURL != "" {
+		rc, err := personalitycache.NewRedis(redisURL)
+		if err != nil {
+			log.Fatalf("redis: %v", err)
+		}
+		if err := rc.Ping(context.Background()); err != nil {
+			log.Fatalf("redis ping: %v", err)
+		}
+		personalityCache = rc
+		log.Print("redis connected for agent personality cache")
+	} else {
+		log.Print("warning: REDIS_URL not set; agent personality uses postgres only")
+	}
+	personalityRepo := personalityrepo.New(db)
+	personalitySvc := personalitysvc.New(personalityRepo, personalityCache)
+	if _, err := personalityRepo.EnsureDefault(context.Background()); err != nil {
+		log.Fatalf("default agent personality: %v", err)
+	}
 
 	mediaBaseURL := strings.TrimSpace(os.Getenv("MEDIA_PUBLIC_BASE_URL"))
 	if mediaBaseURL == "" {
@@ -153,9 +177,15 @@ func main() {
 		log.Print("warning: WORKER_API_KEY not set; internal worker routes disabled")
 	}
 
+	agentAPIKey := strings.TrimSpace(os.Getenv("AGENT_API_KEY"))
+	if agentAPIKey == "" {
+		log.Print("warning: AGENT_API_KEY not set; internal agent routes disabled")
+	}
+
 	app := &httpserver.App{
 		DB:           db,
 		AdminAPIKey:  adminKey,
+		AgentAPIKey:  agentAPIKey,
 		WorkerAPIKey: workerAPIKey,
 		MediaBaseURL: mediaBaseURL,
 		SecretsKey:   loadSecretsKey(),
@@ -166,6 +196,7 @@ func main() {
 		MediaRepo:    mediaRepo,
 		Profile:      profileSvc,
 		Content:      contentSvc,
+		Personality:  personalitySvc,
 	}
 
 	cfg := middleware.LoadConfigFromEnv()

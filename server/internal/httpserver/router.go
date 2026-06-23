@@ -153,4 +153,41 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("GET /v1/internal/content/leetcode/settings", worker(handleInternalSettings(app.Content)))
 		mux.Handle("PATCH /v1/internal/content/leetcode/videos/{id}/whatsapp-status", worker(handleInternalWhatsappStatus(app.Content)))
 	}
+
+	if app.Personality != nil {
+		ph := newAgentPersonalityHandler(app.Personality)
+		mux.Handle("GET /v1/admin/agent/personality", admin(ph.get))
+		mux.Handle("PATCH /v1/admin/agent/personality", admin(ph.update))
+		mux.Handle("POST /v1/admin/agent/personality/reset", admin(ph.reset))
+	}
+
+	if app.AgentAPIKey != "" {
+		agent := func(h http.HandlerFunc) http.Handler {
+			return middleware.AgentAuth(app.AgentAPIKey, h)
+		}
+		tools := newAgentToolsHandler(app)
+		mux.Handle("GET /v1/internal/agent/personality", agent(tools.getPersonality))
+		mux.Handle("PATCH /v1/internal/agent/personality", agent(tools.updatePersonality))
+		mux.Handle("POST /v1/internal/agent/personality/reset", agent(tools.resetPersonality))
+
+		mux.Handle("GET /v1/internal/agent/tools/contacts", agent(tools.searchContacts))
+		mux.Handle("POST /v1/internal/agent/tools/contacts", agent(tools.createContact))
+		mux.Handle("GET /v1/internal/agent/tools/contacts/due-follow-up", agent(tools.listContactsDueFollowUp))
+		mux.Handle("GET /v1/internal/agent/tools/contacts/{id}", agent(tools.getContact))
+		mux.Handle("PATCH /v1/internal/agent/tools/contacts/{id}", agent(tools.updateContact))
+		mux.Handle("POST /v1/internal/agent/tools/contacts/{id}/interactions", agent(tools.logInteraction))
+		mux.Handle("GET /v1/internal/agent/tools/contacts/{id}/finance", agent(tools.getContactFinance))
+
+		mux.Handle("GET /v1/internal/agent/tools/projects", agent(tools.listProjects))
+		mux.Handle("POST /v1/internal/agent/tools/projects", agent(tools.createProject))
+		mux.Handle("GET /v1/internal/agent/tools/projects/{id}", agent(tools.getProject))
+
+		mux.Handle("GET /v1/internal/agent/tools/finance/dashboard", agent(tools.financeDashboard))
+		mux.Handle("GET /v1/internal/agent/tools/finance/summary", agent(tools.financeSummary))
+		mux.Handle("GET /v1/internal/agent/tools/finance/calendar", agent(tools.financeCalendar))
+		mux.Handle("GET /v1/internal/agent/tools/finance/income-sources", agent(tools.listIncomeSources))
+		mux.Handle("POST /v1/internal/agent/tools/finance/income-sources", agent(tools.createIncomeSource))
+		mux.Handle("GET /v1/internal/agent/tools/finance/transactions", agent(tools.listTransactions))
+		mux.Handle("POST /v1/internal/agent/tools/finance/transactions", agent(tools.createTransaction))
+	}
 }
