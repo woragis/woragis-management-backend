@@ -17,6 +17,8 @@ import (
 	"github.com/woragis/management/backend/server/internal/platform/listen"
 	devprojectrepo "github.com/woragis/management/backend/server/internal/devproject/repository"
 	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
+	contactsrepo "github.com/woragis/management/backend/server/internal/contacts/repository"
+	contactssvc "github.com/woragis/management/backend/server/internal/contacts/service"
 	contentrepo "github.com/woragis/management/backend/server/internal/content/repository"
 	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
 	"github.com/woragis/management/backend/server/internal/creativesclient"
@@ -91,6 +93,8 @@ func main() {
 		&models.ContentPromptTemplate{},
 		&models.LeetcodeChannelSettings{},
 		&models.WhatsappMessageTemplate{},
+		&models.Contact{},
+		&models.ContactInteraction{},
 	); err != nil {
 		log.Fatalf("automigrate: %v", err)
 	}
@@ -100,6 +104,9 @@ func main() {
 
 	financeRepo := financerepo.New(db)
 	financeSvc := financesvc.New(financeRepo)
+
+	contactsRepo := contactsrepo.New(db)
+	contactsSvc := contactssvc.New(contactsRepo)
 
 	mediaBaseURL := strings.TrimSpace(os.Getenv("MEDIA_PUBLIC_BASE_URL"))
 	if mediaBaseURL == "" {
@@ -152,6 +159,7 @@ func main() {
 		MediaBaseURL: mediaBaseURL,
 		SecretsKey:   loadSecretsKey(),
 		DevProjects:  devSvc,
+		Contacts:     contactsSvc,
 		Finance:      financeSvc,
 		Media:        mediaSvc,
 		MediaRepo:    mediaRepo,

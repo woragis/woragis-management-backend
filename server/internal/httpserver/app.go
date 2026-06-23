@@ -3,6 +3,7 @@ package httpserver
 import (
 	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
 	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
+	contactssvc "github.com/woragis/management/backend/server/internal/contacts/service"
 	financesvc "github.com/woragis/management/backend/server/internal/finance/service"
 	mediarepo "github.com/woragis/management/backend/server/internal/media/repository"
 	mediasvc "github.com/woragis/management/backend/server/internal/media/service"
@@ -18,6 +19,7 @@ type App struct {
 	SecretsKey   []byte
 
 	DevProjects *devprojectsvc.Service
+	Contacts    *contactssvc.Service
 	Finance     *financesvc.Service
 	Content     *contentsvc.Service
 	Media       *mediasvc.Service

@@ -63,6 +63,17 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.HandleFunc("GET /v1/public/profile", ph.getPublic)
 	}
 
+	if app.Contacts != nil {
+		ch := newContactsHandler(app.Contacts)
+		mux.Handle("GET /v1/admin/contacts", admin(ch.list))
+		mux.Handle("POST /v1/admin/contacts", admin(ch.create))
+		mux.Handle("GET /v1/admin/contacts/{id}", admin(ch.get))
+		mux.Handle("PATCH /v1/admin/contacts/{id}", admin(ch.update))
+		mux.Handle("DELETE /v1/admin/contacts/{id}", admin(ch.delete))
+		mux.Handle("GET /v1/admin/contacts/{id}/interactions", admin(ch.listInteractions))
+		mux.Handle("POST /v1/admin/contacts/{id}/interactions", admin(ch.createInteraction))
+	}
+
 	if app.DevProjects != nil {
 		pub := newPublicHandler(app.DevProjects)
 		mux.HandleFunc("GET /v1/public/projects", pub.listProjects)
