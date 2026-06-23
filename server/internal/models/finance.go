@@ -15,6 +15,7 @@ type IncomeSource struct {
 	Frequency    string     `gorm:"size:32;not null;default:monthly" json:"frequency"`
 	DayOfMonth   int        `gorm:"column:day_of_month;not null;default:1" json:"dayOfMonth"`
 	ProjectID    *uuid.UUID `gorm:"column:project_id;type:uuid;index" json:"projectId"`
+	ContactID    *uuid.UUID `gorm:"column:contact_id;type:uuid;index" json:"contactId"`
 	Active       bool       `gorm:"not null;default:true" json:"active"`
 	Notes        string     `gorm:"type:text" json:"notes"`
 	CreatedAt    time.Time  `json:"createdAt"`
@@ -48,6 +49,7 @@ type Transaction struct {
 	IncomeSourceID *uuid.UUID `gorm:"column:income_source_id;type:uuid;index" json:"incomeSourceId"`
 	ExpenseID      *uuid.UUID `gorm:"column:expense_id;type:uuid;index" json:"expenseId"`
 	ProjectID      *uuid.UUID `gorm:"column:project_id;type:uuid;index" json:"projectId"`
+	ContactID      *uuid.UUID `gorm:"column:contact_id;type:uuid;index" json:"contactId"`
 	InvoiceID      *uuid.UUID `gorm:"column:invoice_id;type:uuid;index" json:"invoiceId"`
 	Notes          string     `gorm:"type:text" json:"notes"`
 	CreatedAt      time.Time  `json:"createdAt"`

@@ -19,16 +19,28 @@ func New(db *gorm.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (r *Repository) ListIncomeSources(ctx context.Context, activeOnly bool) ([]models.IncomeSource, error) {
+func (r *Repository) ListIncomeSources(ctx context.Context, f IncomeSourceFilter) ([]models.IncomeSource, error) {
 	var out []models.IncomeSource
 	q := r.db.WithContext(ctx).Order("name ASC")
-	if activeOnly {
+	if f.ActiveOnly {
 		q = q.Where("active = ?", true)
+	}
+	if f.ContactID != nil {
+		q = q.Where("contact_id = ?", *f.ContactID)
+	}
+	if f.ProjectID != nil {
+		q = q.Where("project_id = ?", *f.ProjectID)
 	}
 	if err := q.Find(&out).Error; err != nil {
 		return nil, fmt.Errorf("list income sources: %w", err)
 	}
 	return out, nil
+}
+
+type IncomeSourceFilter struct {
+	ActiveOnly bool
+	ContactID  *uuid.UUID
+	ProjectID  *uuid.UUID
 }
 
 func (r *Repository) FindIncomeSource(ctx context.Context, id uuid.UUID) (*models.IncomeSource, error) {
@@ -128,6 +140,7 @@ type TransactionFilter struct {
 	Year      int
 	Month     int
 	ProjectID *uuid.UUID
+	ContactID *uuid.UUID
 }
 
 func (r *Repository) ListTransactions(ctx context.Context, f TransactionFilter) ([]models.Transaction, error) {
@@ -143,6 +156,9 @@ func (r *Repository) ListTransactions(ctx context.Context, f TransactionFilter) 
 	}
 	if f.ProjectID != nil {
 		q = q.Where("project_id = ?", *f.ProjectID)
+	}
+	if f.ContactID != nil {
+		q = q.Where("contact_id = ?", *f.ContactID)
 	}
 	if err := q.Find(&out).Error; err != nil {
 		return nil, fmt.Errorf("list transactions: %w", err)

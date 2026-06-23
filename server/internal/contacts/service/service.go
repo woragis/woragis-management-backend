@@ -278,6 +278,17 @@ func (s *Service) ListDueFollowUp(ctx context.Context, before time.Time) ([]mode
 	return rows, nil
 }
 
+func (s *Service) ValidateActiveContact(ctx context.Context, id uuid.UUID) error {
+	row, err := s.GetByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if !row.Active {
+		return apperrors.Invalid(apperrors.CodeInternal, "Contact is not active.")
+	}
+	return nil
+}
+
 func buildDisplayName(name, role, org string) string {
 	name = strings.TrimSpace(name)
 	role = strings.TrimSpace(role)

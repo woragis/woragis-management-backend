@@ -22,25 +22,28 @@ type CreateTransactionInput struct {
 	IncomeSourceID *uuid.UUID
 	ExpenseID      *uuid.UUID
 	ProjectID      *uuid.UUID
+	ContactID      *uuid.UUID
 	InvoiceID      *uuid.UUID
 	Notes          string
 }
 
 type UpdateTransactionInput struct {
-	Type           *string
-	AmountCents    *int64
-	Currency       *string
-	Description    *string
-	Date           *time.Time
-	IncomeSourceID *uuid.UUID
+	Type            *string
+	AmountCents     *int64
+	Currency        *string
+	Description     *string
+	Date            *time.Time
+	IncomeSourceID  *uuid.UUID
 	IncomeSourceSet bool
-	ExpenseID      *uuid.UUID
-	ExpenseSet     bool
-	ProjectID      *uuid.UUID
-	ProjectSet     bool
-	InvoiceID      *uuid.UUID
-	InvoiceSet     bool
-	Notes          *string
+	ExpenseID       *uuid.UUID
+	ExpenseSet      bool
+	ProjectID       *uuid.UUID
+	ProjectSet      bool
+	ContactID       *uuid.UUID
+	ContactSet      bool
+	InvoiceID       *uuid.UUID
+	InvoiceSet      bool
+	Notes           *string
 }
 
 type TransactionFilter struct {
@@ -48,6 +51,7 @@ type TransactionFilter struct {
 	Year      int
 	Month     int
 	ProjectID *uuid.UUID
+	ContactID *uuid.UUID
 }
 
 func (s *Service) ListTransactions(ctx context.Context, f TransactionFilter) ([]models.Transaction, error) {
@@ -57,6 +61,7 @@ func (s *Service) ListTransactions(ctx context.Context, f TransactionFilter) ([]
 		Year:      year,
 		Month:     month,
 		ProjectID: f.ProjectID,
+		ContactID: f.ContactID,
 	})
 	if err != nil {
 		return nil, apperrors.InternalCause(apperrors.CodeInternal, "Failed to load transactions.", err)
@@ -87,6 +92,9 @@ func (s *Service) CreateTransaction(ctx context.Context, in CreateTransactionInp
 	if in.AmountCents <= 0 {
 		return nil, apperrors.Invalid(apperrors.CodeInternal, "Amount must be positive.")
 	}
+	if err := s.validateContactID(ctx, in.ContactID); err != nil {
+		return nil, err
+	}
 	date := in.Date
 	if date.IsZero() {
 		date = time.Now().UTC()
@@ -100,6 +108,7 @@ func (s *Service) CreateTransaction(ctx context.Context, in CreateTransactionInp
 		IncomeSourceID: in.IncomeSourceID,
 		ExpenseID:      in.ExpenseID,
 		ProjectID:      in.ProjectID,
+		ContactID:      in.ContactID,
 		InvoiceID:      in.InvoiceID,
 		Notes:          strings.TrimSpace(in.Notes),
 	}
@@ -148,6 +157,12 @@ func (s *Service) UpdateTransaction(ctx context.Context, id uuid.UUID, in Update
 	}
 	if in.ProjectSet {
 		row.ProjectID = in.ProjectID
+	}
+	if in.ContactSet {
+		if err := s.validateContactID(ctx, in.ContactID); err != nil {
+			return nil, err
+		}
+		row.ContactID = in.ContactID
 	}
 	if in.InvoiceSet {
 		row.InvoiceID = in.InvoiceID
@@ -513,7 +528,7 @@ func (s *Service) Dashboard(ctx context.Context) (*FinanceDashboard, error) {
 	if err != nil {
 		return nil, apperrors.InternalCause(apperrors.CodeInternal, "Failed to count invoices.", err)
 	}
-	incomes, err := s.repo.ListIncomeSources(ctx, true)
+	incomes, err := s.repo.ListIncomeSources(ctx, repository.IncomeSourceFilter{ActiveOnly: true})
 	if err != nil {
 		return nil, apperrors.InternalCause(apperrors.CodeInternal, "Failed to load income sources.", err)
 	}
@@ -541,7 +556,7 @@ func (s *Service) Calendar(ctx context.Context, year, month int) ([]CalendarEven
 	daysInMonth := time.Date(year, time.Month(month)+1, 0, 0, 0, 0, 0, time.UTC).Day()
 	var events []CalendarEvent
 
-	incomes, err := s.repo.ListIncomeSources(ctx, true)
+	incomes, err := s.repo.ListIncomeSources(ctx, repository.IncomeSourceFilter{ActiveOnly: true})
 	if err != nil {
 		return nil, apperrors.InternalCause(apperrors.CodeInternal, "Failed to load income sources.", err)
 	}

@@ -49,7 +49,19 @@ func (h *financeHandler) calendar(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *financeHandler) listIncomeSources(w http.ResponseWriter, r *http.Request) {
-	rows, err := h.svc.ListIncomeSources(r.Context())
+	q := r.URL.Query()
+	f := financesvc.IncomeSourceFilter{}
+	if cid := q.Get("contactId"); cid != "" {
+		if id, err := uuid.Parse(cid); err == nil {
+			f.ContactID = &id
+		}
+	}
+	if pid := q.Get("projectId"); pid != "" {
+		if id, err := uuid.Parse(pid); err == nil {
+			f.ProjectID = &id
+		}
+	}
+	rows, err := h.svc.ListIncomeSourcesFiltered(r.Context(), f)
 	if err != nil {
 		apperrors.WriteError(w, err)
 		return
@@ -203,6 +215,11 @@ func (h *financeHandler) listTransactions(w http.ResponseWriter, r *http.Request
 	if pid := r.URL.Query().Get("projectId"); pid != "" {
 		if id, err := uuid.Parse(pid); err == nil {
 			f.ProjectID = &id
+		}
+	}
+	if cid := r.URL.Query().Get("contactId"); cid != "" {
+		if id, err := uuid.Parse(cid); err == nil {
+			f.ContactID = &id
 		}
 	}
 	rows, err := h.svc.ListTransactions(r.Context(), f)
@@ -472,6 +489,7 @@ type incomeSourceBody struct {
 	Frequency   string     `json:"frequency"`
 	DayOfMonth  int        `json:"dayOfMonth"`
 	ProjectID   *uuid.UUID `json:"projectId"`
+	ContactID   *uuid.UUID `json:"contactId"`
 	Active      bool       `json:"active"`
 	Notes       string     `json:"notes"`
 }
@@ -488,6 +506,7 @@ type incomeSourceUpdateBody struct {
 	Frequency   *string    `json:"frequency"`
 	DayOfMonth  *int       `json:"dayOfMonth"`
 	ProjectID   *uuid.UUID `json:"projectId"`
+	ContactID   *uuid.UUID `json:"contactId"`
 	Active      *bool      `json:"active"`
 	Notes       *string    `json:"notes"`
 }
@@ -506,6 +525,10 @@ func (b incomeSourceUpdateBody) toUpdate() financesvc.UpdateIncomeSourceInput {
 	if b.ProjectID != nil {
 		in.ProjectID = b.ProjectID
 		in.ProjectSet = true
+	}
+	if b.ContactID != nil {
+		in.ContactID = b.ContactID
+		in.ContactSet = true
 	}
 	return in
 }
@@ -574,6 +597,7 @@ type transactionBody struct {
 	IncomeSourceID *uuid.UUID `json:"incomeSourceId"`
 	ExpenseID      *uuid.UUID `json:"expenseId"`
 	ProjectID      *uuid.UUID `json:"projectId"`
+	ContactID      *uuid.UUID `json:"contactId"`
 	InvoiceID      *uuid.UUID `json:"invoiceId"`
 	Notes          string     `json:"notes"`
 }
@@ -591,6 +615,7 @@ type transactionUpdateBody struct {
 	IncomeSourceID  *uuid.UUID `json:"incomeSourceId"`
 	ExpenseID       *uuid.UUID `json:"expenseId"`
 	ProjectID       *uuid.UUID `json:"projectId"`
+	ContactID       *uuid.UUID `json:"contactId"`
 	InvoiceID       *uuid.UUID `json:"invoiceId"`
 	Notes           *string    `json:"notes"`
 }
@@ -615,6 +640,10 @@ func (b transactionUpdateBody) toUpdate() financesvc.UpdateTransactionInput {
 	if b.ProjectID != nil {
 		in.ProjectID = b.ProjectID
 		in.ProjectSet = true
+	}
+	if b.ContactID != nil {
+		in.ContactID = b.ContactID
+		in.ContactSet = true
 	}
 	if b.InvoiceID != nil {
 		in.InvoiceID = b.InvoiceID

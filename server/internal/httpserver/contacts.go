@@ -8,14 +8,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/woragis/management/backend/server/internal/apperrors"
 	contactssvc "github.com/woragis/management/backend/server/internal/contacts/service"
+	financesvc "github.com/woragis/management/backend/server/internal/finance/service"
 )
 
 type contactsHandler struct {
-	svc *contactssvc.Service
+	svc     *contactssvc.Service
+	finance *financesvc.Service
 }
 
-func newContactsHandler(svc *contactssvc.Service) *contactsHandler {
-	return &contactsHandler{svc: svc}
+func newContactsHandler(svc *contactssvc.Service, finance *financesvc.Service) *contactsHandler {
+	return &contactsHandler{svc: svc, finance: finance}
 }
 
 func (h *contactsHandler) list(w http.ResponseWriter, r *http.Request) {
@@ -131,6 +133,24 @@ func (h *contactsHandler) createInteraction(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	apperrors.WriteJSON(w, http.StatusCreated, row)
+}
+
+func (h *contactsHandler) contactFinance(w http.ResponseWriter, r *http.Request) {
+	if h.finance == nil {
+		apperrors.WriteError(w, apperrors.InternalErr(apperrors.CodeInternal, "Finance service unavailable."))
+		return
+	}
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeInternal, "Invalid id."))
+		return
+	}
+	out, err := h.finance.ContactFinance(r.Context(), id)
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	apperrors.WriteJSON(w, http.StatusOK, out)
 }
 
 type contactBody struct {

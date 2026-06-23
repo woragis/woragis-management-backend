@@ -14,11 +14,30 @@ import (
 )
 
 type Service struct {
-	repo *repository.Repository
+	repo     *repository.Repository
+	contacts ContactValidator
+}
+
+type ContactValidator interface {
+	ValidateActiveContact(ctx context.Context, id uuid.UUID) error
 }
 
 func New(repo *repository.Repository) *Service {
 	return &Service{repo: repo}
+}
+
+func (s *Service) SetContactValidator(v ContactValidator) {
+	s.contacts = v
+}
+
+func (s *Service) validateContactID(ctx context.Context, id *uuid.UUID) error {
+	if id == nil || *id == uuid.Nil {
+		return nil
+	}
+	if s.contacts == nil {
+		return nil
+	}
+	return s.contacts.ValidateActiveContact(ctx, *id)
 }
 
 type CreateIncomeSourceInput struct {
@@ -29,6 +48,7 @@ type CreateIncomeSourceInput struct {
 	Frequency   string
 	DayOfMonth  int
 	ProjectID   *uuid.UUID
+	ContactID   *uuid.UUID
 	Active      bool
 	Notes       string
 }
@@ -42,12 +62,27 @@ type UpdateIncomeSourceInput struct {
 	DayOfMonth  *int
 	ProjectID   *uuid.UUID
 	ProjectSet  bool
+	ContactID   *uuid.UUID
+	ContactSet  bool
 	Active      *bool
 	Notes       *string
 }
 
+type IncomeSourceFilter struct {
+	ContactID *uuid.UUID
+	ProjectID *uuid.UUID
+}
+
 func (s *Service) ListIncomeSources(ctx context.Context) ([]models.IncomeSource, error) {
-	rows, err := s.repo.ListIncomeSources(ctx, false)
+	return s.ListIncomeSourcesFiltered(ctx, IncomeSourceFilter{})
+}
+
+func (s *Service) ListIncomeSourcesFiltered(ctx context.Context, f IncomeSourceFilter) ([]models.IncomeSource, error) {
+	rows, err := s.repo.ListIncomeSources(ctx, repository.IncomeSourceFilter{
+		ActiveOnly: false,
+		ContactID:  f.ContactID,
+		ProjectID:  f.ProjectID,
+	})
 	if err != nil {
 		return nil, apperrors.InternalCause(apperrors.CodeInternal, "Failed to load income sources.", err)
 	}
@@ -70,6 +105,9 @@ func (s *Service) CreateIncomeSource(ctx context.Context, in CreateIncomeSourceI
 	if name == "" {
 		return nil, apperrors.Invalid(apperrors.CodeInternal, "Name is required.")
 	}
+	if err := s.validateContactID(ctx, in.ContactID); err != nil {
+		return nil, err
+	}
 	row := &models.IncomeSource{
 		Name:        name,
 		Type:        normalizeIncomeType(in.Type),
@@ -78,6 +116,7 @@ func (s *Service) CreateIncomeSource(ctx context.Context, in CreateIncomeSourceI
 		Frequency:   normalizeFrequency(in.Frequency),
 		DayOfMonth:  clampDay(in.DayOfMonth),
 		ProjectID:   in.ProjectID,
+		ContactID:   in.ContactID,
 		Active:      in.Active,
 		Notes:       strings.TrimSpace(in.Notes),
 	}
@@ -116,6 +155,12 @@ func (s *Service) UpdateIncomeSource(ctx context.Context, id uuid.UUID, in Updat
 	}
 	if in.ProjectSet {
 		row.ProjectID = in.ProjectID
+	}
+	if in.ContactSet {
+		if err := s.validateContactID(ctx, in.ContactID); err != nil {
+			return nil, err
+		}
+		row.ContactID = in.ContactID
 	}
 	if in.Active != nil {
 		row.Active = *in.Active

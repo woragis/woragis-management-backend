@@ -107,6 +107,7 @@ func main() {
 
 	contactsRepo := contactsrepo.New(db)
 	contactsSvc := contactssvc.New(contactsRepo)
+	financeSvc.SetContactValidator(contactsSvc)
 
 	mediaBaseURL := strings.TrimSpace(os.Getenv("MEDIA_PUBLIC_BASE_URL"))
 	if mediaBaseURL == "" {

@@ -64,7 +64,7 @@ func Mount(mux *http.ServeMux, app *App) {
 	}
 
 	if app.Contacts != nil {
-		ch := newContactsHandler(app.Contacts)
+		ch := newContactsHandler(app.Contacts, app.Finance)
 		mux.Handle("GET /v1/admin/contacts", admin(ch.list))
 		mux.Handle("POST /v1/admin/contacts", admin(ch.create))
 		mux.Handle("GET /v1/admin/contacts/{id}", admin(ch.get))
@@ -72,6 +72,7 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("DELETE /v1/admin/contacts/{id}", admin(ch.delete))
 		mux.Handle("GET /v1/admin/contacts/{id}/interactions", admin(ch.listInteractions))
 		mux.Handle("POST /v1/admin/contacts/{id}/interactions", admin(ch.createInteraction))
+		mux.Handle("GET /v1/admin/contacts/{id}/finance", admin(ch.contactFinance))
 	}
 
 	if app.DevProjects != nil {
