@@ -12,10 +12,15 @@ import (
 )
 
 type ListFilter struct {
-	Status   string
-	IsPublic *bool
-	Featured *bool
-	Query    string
+	Status         string
+	Intent         string
+	Monetization   string
+	Maturity       string
+	VisibilityGoal string
+	Distribution   string
+	IsPublic       *bool
+	Featured       *bool
+	Query          string
 }
 
 func (r *Repository) ListProjectsFiltered(ctx context.Context, f ListFilter) ([]models.Project, error) {
@@ -23,6 +28,21 @@ func (r *Repository) ListProjectsFiltered(ctx context.Context, f ListFilter) ([]
 	q := r.db.WithContext(ctx)
 	if s := strings.TrimSpace(f.Status); s != "" {
 		q = q.Where("status = ?", s)
+	}
+	if s := strings.TrimSpace(f.Intent); s != "" {
+		q = q.Where("intent = ?", s)
+	}
+	if s := strings.TrimSpace(f.Monetization); s != "" {
+		q = q.Where("monetization = ?", s)
+	}
+	if s := strings.TrimSpace(f.Maturity); s != "" {
+		q = q.Where("maturity = ?", s)
+	}
+	if s := strings.TrimSpace(f.VisibilityGoal); s != "" {
+		q = q.Where("visibility_goal = ?", s)
+	}
+	if s := strings.TrimSpace(f.Distribution); s != "" {
+		q = q.Where("distribution::text ILIKE ?", "%\""+s+"\"%")
 	}
 	if f.IsPublic != nil {
 		q = q.Where("is_public = ?", *f.IsPublic)

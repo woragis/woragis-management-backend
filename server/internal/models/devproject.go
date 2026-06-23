@@ -15,6 +15,11 @@ type Project struct {
 	ShortDescription string         `gorm:"column:short_description;type:text" json:"shortDescription"`
 	LongDescription  string         `gorm:"column:long_description;type:text" json:"longDescription"`
 	Status           string         `gorm:"size:32;not null;default:active" json:"status"`
+	Intent           string         `gorm:"size:32;not null;default:portfolio;index" json:"intent"`
+	Distribution     datatypes.JSON `gorm:"type:jsonb;not null;default:'[]'" json:"distribution"`
+	Monetization     string         `gorm:"size:32;not null;default:none;index" json:"monetization"`
+	Maturity         string         `gorm:"size:32;not null;default:idea;index" json:"maturity"`
+	VisibilityGoal   string         `gorm:"column:visibility_goal;size:32;not null;default:private;index" json:"visibilityGoal"`
 	Stack            datatypes.JSON   `gorm:"type:jsonb" json:"stack"`
 	RepoURL          string         `gorm:"column:repo_url;size:500" json:"repoUrl"`
 	DemoURL          string         `gorm:"column:demo_url;size:500" json:"demoUrl"`

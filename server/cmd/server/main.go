@@ -24,6 +24,8 @@ import (
 	personalitysvc "github.com/woragis/management/backend/server/internal/agent/personality/service"
 	messagingrepo "github.com/woragis/management/backend/server/internal/messaging/repository"
 	messagingsvc "github.com/woragis/management/backend/server/internal/messaging/service"
+	presencerepo "github.com/woragis/management/backend/server/internal/presence/repository"
+	presencesvc "github.com/woragis/management/backend/server/internal/presence/service"
 	"github.com/woragis/management/backend/server/internal/messaging/executor"
 	contentrepo "github.com/woragis/management/backend/server/internal/content/repository"
 	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
@@ -106,6 +108,9 @@ func main() {
 		&models.MessageTemplate{},
 		&models.ScheduledJob{},
 		&models.MessageDelivery{},
+		&models.SocialCampaign{},
+		&models.PostTemplate{},
+		&models.SocialPost{},
 	); err != nil {
 		log.Fatalf("automigrate: %v", err)
 	}
@@ -184,6 +189,9 @@ func main() {
 	messagingSvc := messagingsvc.New(messagingRepo)
 	schedulerExec := executor.New(messagingSvc, contentSvc, whatsappWorkerClient)
 
+	presenceRepo := presencerepo.New(db)
+	presenceSvc := presencesvc.New(presenceRepo)
+
 	workerAPIKey := strings.TrimSpace(os.Getenv("WORKER_API_KEY"))
 	if workerAPIKey == "" {
 		log.Print("warning: WORKER_API_KEY not set; internal worker routes disabled")
@@ -210,6 +218,7 @@ func main() {
 		Content:      contentSvc,
 		Personality:  personalitySvc,
 		Messaging:    messagingSvc,
+		Presence:     presenceSvc,
 		Scheduler:    schedulerExec,
 	}
 

@@ -9,6 +9,7 @@ import (
 	mediarepo "github.com/woragis/management/backend/server/internal/media/repository"
 	mediasvc "github.com/woragis/management/backend/server/internal/media/service"
 	messagingsvc "github.com/woragis/management/backend/server/internal/messaging/service"
+	presencesvc "github.com/woragis/management/backend/server/internal/presence/service"
 	profilesvc "github.com/woragis/management/backend/server/internal/profile/service"
 	"github.com/woragis/management/backend/server/internal/messaging/executor"
 	"gorm.io/gorm"
@@ -31,5 +32,6 @@ type App struct {
 	Profile     *profilesvc.Service
 	Personality *personalitysvc.Service
 	Messaging   *messagingsvc.Service
+	Presence    *presencesvc.Service
 	Scheduler   *executor.Executor
 }

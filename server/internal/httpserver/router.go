@@ -174,6 +174,25 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("GET /v1/admin/messaging/deliveries", admin(mh.listDeliveries))
 	}
 
+	if app.Presence != nil {
+		ph := newPresenceHandler(app.Presence)
+		mux.Handle("GET /v1/admin/presence/campaigns", admin(ph.listCampaigns))
+		mux.Handle("POST /v1/admin/presence/campaigns", admin(ph.createCampaign))
+		mux.Handle("GET /v1/admin/presence/campaigns/{id}", admin(ph.getCampaign))
+		mux.Handle("PATCH /v1/admin/presence/campaigns/{id}", admin(ph.updateCampaign))
+		mux.Handle("DELETE /v1/admin/presence/campaigns/{id}", admin(ph.deleteCampaign))
+		mux.Handle("GET /v1/admin/presence/templates", admin(ph.listTemplates))
+		mux.Handle("POST /v1/admin/presence/templates", admin(ph.createTemplate))
+		mux.Handle("GET /v1/admin/presence/templates/{id}", admin(ph.getTemplate))
+		mux.Handle("PATCH /v1/admin/presence/templates/{id}", admin(ph.updateTemplate))
+		mux.Handle("DELETE /v1/admin/presence/templates/{id}", admin(ph.deleteTemplate))
+		mux.Handle("GET /v1/admin/presence/posts", admin(ph.listPosts))
+		mux.Handle("POST /v1/admin/presence/posts", admin(ph.createPost))
+		mux.Handle("GET /v1/admin/presence/posts/{id}", admin(ph.getPost))
+		mux.Handle("PATCH /v1/admin/presence/posts/{id}", admin(ph.updatePost))
+		mux.Handle("DELETE /v1/admin/presence/posts/{id}", admin(ph.deletePost))
+	}
+
 	if app.Messaging != nil && app.Scheduler != nil && app.WorkerAPIKey != "" {
 		worker := func(h http.HandlerFunc) http.Handler {
 			return middleware.WorkerAuth(app.WorkerAPIKey, h)

@@ -35,6 +35,11 @@ type CreateProjectInput struct {
 	ShortDescription string
 	LongDescription  string
 	Status           string
+	Intent           string
+	Distribution     []string
+	Monetization     string
+	Maturity         string
+	VisibilityGoal   string
 	Stack            []string
 	RepoURL          string
 	DemoURL          string
@@ -56,6 +61,12 @@ type UpdateProjectInput struct {
 	ShortDescription *string
 	LongDescription  *string
 	Status           *string
+	Intent           *string
+	Distribution     []string
+	DistributionSet  bool
+	Monetization     *string
+	Maturity         *string
+	VisibilityGoal   *string
 	Stack            []string
 	StackSet         bool
 	RepoURL          *string
@@ -157,6 +168,11 @@ func (s *Service) Create(ctx context.Context, in CreateProjectInput) (*models.Pr
 		ShortDescription: strings.TrimSpace(in.ShortDescription),
 		LongDescription:  strings.TrimSpace(in.LongDescription),
 		Status:           normalizeStatus(in.Status),
+		Intent:           normalizeIntent(in.Intent),
+		Distribution:     distributionJSON(in.Distribution),
+		Monetization:     normalizeMonetization(in.Monetization),
+		Maturity:         normalizeMaturity(in.Maturity),
+		VisibilityGoal:   normalizeVisibilityGoal(in.VisibilityGoal),
 		Stack:            stackJSON(in.Stack),
 		RepoURL:          strings.TrimSpace(in.RepoURL),
 		DemoURL:          strings.TrimSpace(in.DemoURL),
@@ -206,6 +222,21 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateProjectInpu
 	}
 	if in.Status != nil {
 		p.Status = normalizeStatus(*in.Status)
+	}
+	if in.Intent != nil {
+		p.Intent = normalizeIntent(*in.Intent)
+	}
+	if in.DistributionSet {
+		p.Distribution = distributionJSON(in.Distribution)
+	}
+	if in.Monetization != nil {
+		p.Monetization = normalizeMonetization(*in.Monetization)
+	}
+	if in.Maturity != nil {
+		p.Maturity = normalizeMaturity(*in.Maturity)
+	}
+	if in.VisibilityGoal != nil {
+		p.VisibilityGoal = normalizeVisibilityGoal(*in.VisibilityGoal)
 	}
 	if in.StackSet {
 		p.Stack = stackJSON(in.Stack)

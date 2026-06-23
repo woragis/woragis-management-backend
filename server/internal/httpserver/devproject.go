@@ -36,12 +36,18 @@ func (h *devprojectHandler) list(w http.ResponseWriter, r *http.Request) {
 		featured = &b
 	}
 	filter := devprojectsvc.ListFilter{
-		Status:   q.Get("status"),
-		IsPublic: isPublic,
-		Featured: featured,
-		Query:    q.Get("q"),
+		Status:         q.Get("status"),
+		Intent:         q.Get("intent"),
+		Monetization:   q.Get("monetization"),
+		Maturity:       q.Get("maturity"),
+		VisibilityGoal: q.Get("visibilityGoal"),
+		Distribution:   q.Get("distribution"),
+		IsPublic:       isPublic,
+		Featured:       featured,
+		Query:          q.Get("q"),
 	}
-	if filter.Status != "" || filter.IsPublic != nil || filter.Featured != nil || filter.Query != "" {
+	if filter.Status != "" || filter.Intent != "" || filter.Monetization != "" || filter.Maturity != "" ||
+		filter.VisibilityGoal != "" || filter.Distribution != "" || filter.IsPublic != nil || filter.Featured != nil || filter.Query != "" {
 		items, err := h.svc.ListFiltered(r.Context(), filter)
 		if err != nil {
 			apperrors.WriteError(w, err)
@@ -357,6 +363,11 @@ type createProjectBody struct {
 	ShortDescription string     `json:"shortDescription"`
 	LongDescription  string     `json:"longDescription"`
 	Status           string     `json:"status"`
+	Intent           string     `json:"intent"`
+	Distribution     []string   `json:"distribution"`
+	Monetization     string     `json:"monetization"`
+	Maturity         string     `json:"maturity"`
+	VisibilityGoal   string     `json:"visibilityGoal"`
 	Stack            []string   `json:"stack"`
 	RepoURL          string     `json:"repoUrl"`
 	DemoURL          string     `json:"demoUrl"`
@@ -382,6 +393,11 @@ type updateProjectBody struct {
 	ShortDescription *string    `json:"shortDescription"`
 	LongDescription  *string    `json:"longDescription"`
 	Status           *string    `json:"status"`
+	Intent           *string    `json:"intent"`
+	Distribution     []string   `json:"distribution"`
+	Monetization     *string    `json:"monetization"`
+	Maturity         *string    `json:"maturity"`
+	VisibilityGoal   *string    `json:"visibilityGoal"`
 	Stack            []string   `json:"stack"`
 	RepoURL          *string    `json:"repoUrl"`
 	DemoURL          *string    `json:"demoUrl"`
@@ -404,6 +420,10 @@ func (b updateProjectBody) toInput() devprojectsvc.UpdateProjectInput {
 		ShortDescription: b.ShortDescription,
 		LongDescription:  b.LongDescription,
 		Status:           b.Status,
+		Intent:           b.Intent,
+		Monetization:     b.Monetization,
+		Maturity:         b.Maturity,
+		VisibilityGoal:   b.VisibilityGoal,
 		RepoURL:          b.RepoURL,
 		DemoURL:          b.DemoURL,
 		GithubURL:        b.GithubURL,
@@ -417,6 +437,10 @@ func (b updateProjectBody) toInput() devprojectsvc.UpdateProjectInput {
 	if b.Stack != nil {
 		in.Stack = b.Stack
 		in.StackSet = true
+	}
+	if b.Distribution != nil {
+		in.Distribution = b.Distribution
+		in.DistributionSet = true
 	}
 	if b.CoverImageID != nil {
 		in.CoverImageID = b.CoverImageID

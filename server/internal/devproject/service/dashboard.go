@@ -14,10 +14,15 @@ import (
 )
 
 type ListFilter struct {
-	Status   string
-	IsPublic *bool
-	Featured *bool
-	Query    string
+	Status         string
+	Intent         string
+	Monetization   string
+	Maturity       string
+	VisibilityGoal string
+	Distribution   string
+	IsPublic       *bool
+	Featured       *bool
+	Query          string
 }
 
 type Dashboard struct {
@@ -35,10 +40,15 @@ type MediaCounter interface {
 
 func (s *Service) ListFiltered(ctx context.Context, f ListFilter) ([]models.Project, error) {
 	out, err := s.repo.ListProjectsFiltered(ctx, repository.ListFilter{
-		Status:   f.Status,
-		IsPublic: f.IsPublic,
-		Featured: f.Featured,
-		Query:    f.Query,
+		Status:         f.Status,
+		Intent:         f.Intent,
+		Monetization:   f.Monetization,
+		Maturity:       f.Maturity,
+		VisibilityGoal: f.VisibilityGoal,
+		Distribution:   f.Distribution,
+		IsPublic:       f.IsPublic,
+		Featured:       f.Featured,
+		Query:          f.Query,
 	})
 	if err != nil {
 		return nil, apperrors.InternalCause(apperrors.CodeProjectListV1ServiceLoadFailed, apperrors.MsgProjectListV1ServiceLoadFailed, err)
