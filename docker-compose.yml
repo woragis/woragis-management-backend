@@ -107,6 +107,29 @@ services:
       timeout: 3s
       retries: 10
 
+  scheduler-worker:
+    build:
+      context: ./scheduler-worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3004
+      MANAGEMENT_API_URL: http://api:8080
+      WORKER_API_KEY: ${WORKER_API_KEY:-}
+      POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-60000}
+    ports:
+      - "127.0.0.1:3004:3004"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3004/"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
   agent-worker:
     build:
       context: ./agent-worker
@@ -116,9 +139,13 @@ services:
       PORT: 3002
       MANAGEMENT_API_URL: http://api:8080
       AGENT_API_KEY: ${AGENT_API_KEY:-}
+      CHANNEL_WORKER_KEY: ${CHANNEL_WORKER_KEY:-${AGENT_API_KEY:-}}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      TELEGRAM_ALLOWED_USER_IDS: ${TELEGRAM_ALLOWED_USER_IDS:-}
+      TELEGRAM_WORKER_URL: http://telegram-worker:3003
+      WHATSAPP_WORKER_URL: http://whatsapp-worker:3001
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
     ports:
       - "127.0.0.1:3002:3002"
     depends_on:
@@ -134,6 +161,30 @@ services:
       timeout: 5s
       retries: 10
 
+  telegram-worker:
+    build:
+      context: ./telegram-worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      PORT: 3003
+      AGENT_WORKER_URL: http://agent-worker:3002
+      CHANNEL_WORKER_KEY: ${CHANNEL_WORKER_KEY:-${AGENT_API_KEY:-}}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_ALLOWED_USER_IDS: ${TELEGRAM_ALLOWED_USER_IDS:-}
+    ports:
+      - "127.0.0.1:3003:3003"
+    depends_on:
+      agent-worker:
+        condition: service_healthy
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3003/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
   whatsapp-worker:
     build:
       context: ./whatsapp-worker
@@ -144,7 +195,8 @@ services:
       DATABASE_URL: ${WHATSAPP_DATABASE_URL:-postgres://${WHATSAPP_POSTGRES_USER:-woragis}:${WHATSAPP_POSTGRES_PASSWORD:-woragis}@postgres-whatsapp:5432/${WHATSAPP_POSTGRES_DB:-whatsapp}?sslmode=disable}
       MANAGEMENT_API_URL: http://api:8080
       WORKER_API_KEY: ${WORKER_API_KEY:-}
-      WHATSAPP_GROUP_JID: ${WHATSAPP_GROUP_JID:-}
+      AGENT_WORKER_URL: ${AGENT_WORKER_URL:-http://agent-worker:3002}
+      CHANNEL_WORKER_KEY: ${CHANNEL_WORKER_KEY:-${AGENT_API_KEY:-}}
       SESSION_DIR: /data/session
       TZ: ${WHATSAPP_TZ:-America/Sao_Paulo}
     volumes:

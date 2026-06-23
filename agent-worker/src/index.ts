@@ -1,20 +1,22 @@
-import http from 'node:http'
 import { loadConfig } from './config.js'
-import { startTelegramBot } from './telegram/bot.js'
+import { createAgentServer, createRuntime } from './server.js'
+import { initTwilioStub } from './twilio/stub.js'
 import pino from 'pino'
 
 const log = pino({ name: 'agent-worker' })
 
 async function main() {
   const cfg = loadConfig()
+  const { sessions, agent, openai } = createRuntime(cfg)
 
-  const server = http.createServer((_req, res) => {
-    res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ ok: true, service: 'agent-worker' }))
-  })
-  server.listen(cfg.port, () => log.info({ port: cfg.port }, 'health server listening'))
+  if (!cfg.openaiApiKey) {
+    log.warn('OPENAI_API_KEY not set; conversational inbound disabled')
+  }
 
-  startTelegramBot(cfg)
+  initTwilioStub(cfg)
+
+  const server = createAgentServer(cfg, sessions, agent, openai)
+  server.listen(cfg.port, () => log.info({ port: cfg.port }, 'agent-worker listening'))
 }
 
 main().catch((err) => {

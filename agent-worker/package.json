@@ -10,8 +10,7 @@
   },
   "dependencies": {
     "openai": "^4.77.0",
-    "pino": "^9.6.0",
-    "telegraf": "^4.16.3"
+    "pino": "^9.6.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
