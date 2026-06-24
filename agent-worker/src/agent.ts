@@ -222,6 +222,75 @@ export const toolDefinitions: ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'list_social_posts',
+      description: 'List social media post drafts and scheduled posts for LinkedIn, Reddit, or Twitter.',
+      parameters: {
+        type: 'object',
+        properties: {
+          projectId: { type: 'string' },
+          platform: { type: 'string', enum: ['linkedin', 'reddit', 'twitter'] },
+          status: { type: 'string', enum: ['draft', 'scheduled', 'published', 'cancelled'] },
+          goal: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_post_templates',
+      description: 'List reusable social post templates with {{variable}} placeholders.',
+      parameters: {
+        type: 'object',
+        properties: {
+          platform: { type: 'string' },
+          goal: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'apply_post_template',
+      description: 'Render a post template for a project (preview only, does not save).',
+      parameters: {
+        type: 'object',
+        properties: {
+          templateSlug: { type: 'string' },
+          projectId: { type: 'string' },
+        },
+        required: ['templateSlug', 'projectId'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_social_post',
+      description: 'Create a social post draft or scheduled post. Never set status to published without explicit user confirmation.',
+      parameters: {
+        type: 'object',
+        properties: {
+          projectId: { type: 'string' },
+          campaignId: { type: 'string' },
+          platform: { type: 'string', enum: ['linkedin', 'reddit', 'twitter'] },
+          goal: { type: 'string' },
+          status: { type: 'string', enum: ['draft', 'scheduled'] },
+          title: { type: 'string' },
+          body: { type: 'string' },
+          hook: { type: 'string' },
+          cta: { type: 'string' },
+          templateSlug: { type: 'string' },
+          scheduledAt: { type: 'string', description: 'ISO 8601 datetime' },
+        },
+        required: ['platform', 'body'],
+      },
+    },
+  },
 ]
 
 export type ChatSession = {
@@ -236,6 +305,7 @@ export function buildSystemPrompt(p: AgentPersonality): string {
     'Responda em português brasileiro, de forma clara e objetiva.',
     'Use as tools para dados reais; nunca invente IDs ou valores financeiros.',
     'Antes de ações destrutivas ou financeiras, peça confirmação explícita.',
+    'Posts sociais: crie apenas como draft ou scheduled; nunca marque published sem confirmação.',
     'Se houver contatos homônimos, desambigüe por organização e cargo.',
     extra ? `Instruções adicionais: ${extra}` : '',
   ]
@@ -289,6 +359,17 @@ export async function runTool(
       return api.listTransactions(stringParams(args, ['type', 'contactId'], numMap(args, ['year', 'month'])))
     case 'create_transaction':
       return api.createTransaction(args)
+    case 'list_social_posts':
+      return api.listSocialPosts(stringParams(args, ['projectId', 'platform', 'status', 'goal']))
+    case 'list_post_templates':
+      return api.listPostTemplates(stringParams(args, ['platform', 'goal']))
+    case 'apply_post_template':
+      return api.applyPostTemplate({
+        templateSlug: String(args.templateSlug),
+        projectId: String(args.projectId),
+      })
+    case 'create_social_post':
+      return api.createSocialPost(args)
     default:
       throw new Error(`Unknown tool: ${name}`)
   }

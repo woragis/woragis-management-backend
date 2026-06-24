@@ -11,6 +11,8 @@ Documentação de planejamento para o assistente pessoal, domínio de contatos, 
 | [03-finance-agent-integration.md](./03-finance-agent-integration.md) | Ligação finanças ↔ contatos ↔ bot, fase F1 |
 | [04-agent-personality.md](./04-agent-personality.md) | Nome, saudações, voz; Redis + Postgres; latência |
 | [05-entity-catalog.md](./05-entity-catalog.md) | Entidades existentes e o que o agente já pode ler |
+| [07-messaging-platform.md](./07-messaging-platform.md) | Canais, templates, jobs, workers |
+| [08-projects-taxonomy-and-presence.md](./08-projects-taxonomy-and-presence.md) | Dimensões de projeto e domínio Presence |
 
 ## Roadmap consolidado (ordem sugerida)
 

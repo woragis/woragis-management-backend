@@ -16,7 +16,7 @@ Inventário do `management/backend` (Postgres principal) e APIs disponíveis. Ba
 
 | Entidade | Campos principais |
 |----------|-------------------|
-| **Project** | name, slug, descriptions, status, stack, URLs, notes, isPublic, featured, coverImageId, parentProjectId |
+| **Project** | name, slug, descriptions, status, stack, URLs, notes, isPublic, featured, coverImageId, parentProjectId, **intent, distribution, monetization, maturity, visibilityGoal** |
 | **ProjectLink** | type, url, environment, label |
 | **ProjectDomain** | domain, registrar, expiresAt |
 | **ProjectSecret** | name, valor criptografado, environment |
@@ -58,6 +58,14 @@ Agregados: `FinanceDashboard`, `MonthlySummary`, `CalendarEvent`.
 | **LeetcodeChannelSettings** | horários de post |
 | **WhatsappMessageTemplate** | corpo das mensagens automáticas |
 
+### Presence (`presence`)
+
+| Entidade | Campos principais |
+|----------|-------------------|
+| **SocialCampaign** | name, goal, description, projectId, startDate, endDate, active |
+| **PostTemplate** | slug, name, platform, goal, body |
+| **SocialPost** | projectId, campaignId, platform, goal, status, title, hook, body, cta, scheduledAt, publishedUrl |
+
 ### Planejado (ainda não existe)
 
 | Entidade | Doc |
@@ -80,6 +88,8 @@ O agente deve espelhar estas rotas via tools internas:
 | Media | list, get |
 | Finance | dashboard, summary, calendar, income, expenses, transactions, invoices, budgets |
 | Content | videos, thumbnails, templates, settings, whatsapp-* |
+| Presence | campaigns, templates, posts |
+| Agent presence | `list_social_posts`, `list_post_templates`, `apply_post_template`, `create_social_post` |
 
 \* Secrets e envs: dados sensíveis — tools com confirmação.
 

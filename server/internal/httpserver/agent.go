@@ -6,6 +6,8 @@ import (
 
 	"github.com/woragis/management/backend/server/internal/apperrors"
 	contactssvc "github.com/woragis/management/backend/server/internal/contacts/service"
+	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
+	presencesvc "github.com/woragis/management/backend/server/internal/presence/service"
 )
 
 type agentToolsHandler struct {
@@ -14,6 +16,9 @@ type agentToolsHandler struct {
 	contactsH   *contactsHandler
 	financeH    *financeHandler
 	devH        *devprojectHandler
+	devProjects *devprojectsvc.Service
+	presenceH   *presenceHandler
+	presence    *presencesvc.Service
 }
 
 func newAgentToolsHandler(app *App) *agentToolsHandler {
@@ -31,6 +36,11 @@ func newAgentToolsHandler(app *App) *agentToolsHandler {
 	}
 	if app.DevProjects != nil {
 		h.devH = newDevprojectHandler(app.DevProjects)
+		h.devProjects = app.DevProjects
+	}
+	if app.Presence != nil {
+		h.presence = app.Presence
+		h.presenceH = newPresenceHandler(app.Presence)
 	}
 	return h
 }

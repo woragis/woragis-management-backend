@@ -236,5 +236,10 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("POST /v1/internal/agent/tools/finance/income-sources", agent(tools.createIncomeSource))
 		mux.Handle("GET /v1/internal/agent/tools/finance/transactions", agent(tools.listTransactions))
 		mux.Handle("POST /v1/internal/agent/tools/finance/transactions", agent(tools.createTransaction))
+
+		mux.Handle("GET /v1/internal/agent/tools/presence/posts", agent(tools.listSocialPosts))
+		mux.Handle("POST /v1/internal/agent/tools/presence/posts", agent(tools.createSocialPost))
+		mux.Handle("GET /v1/internal/agent/tools/presence/templates", agent(tools.listPostTemplates))
+		mux.Handle("POST /v1/internal/agent/tools/presence/apply-template", agent(tools.applyPostTemplate))
 	}
 }

@@ -154,4 +154,30 @@ export class ManagementClient {
       body: JSON.stringify(body),
     })
   }
+
+  listSocialPosts(params: Record<string, string> = {}) {
+    const q = new URLSearchParams(params).toString()
+    const suffix = q ? `?${q}` : ''
+    return request<unknown[]>(this.cfg, `/v1/internal/agent/tools/presence/posts${suffix}`)
+  }
+
+  listPostTemplates(params: Record<string, string> = {}) {
+    const q = new URLSearchParams(params).toString()
+    const suffix = q ? `?${q}` : ''
+    return request<unknown[]>(this.cfg, `/v1/internal/agent/tools/presence/templates${suffix}`)
+  }
+
+  applyPostTemplate(body: { templateSlug: string; projectId: string }) {
+    return request<unknown>(this.cfg, '/v1/internal/agent/tools/presence/apply-template', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  }
+
+  createSocialPost(body: Record<string, unknown>) {
+    return request<unknown>(this.cfg, '/v1/internal/agent/tools/presence/posts', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  }
 }
