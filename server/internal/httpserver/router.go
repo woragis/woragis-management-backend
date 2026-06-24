@@ -155,7 +155,7 @@ func Mount(mux *http.ServeMux, app *App) {
 	}
 
 	if app.Messaging != nil {
-		mh := newMessagingHandler(app.Messaging)
+		mh := newMessagingHandler(app.Messaging, app.Scheduler)
 		mux.Handle("GET /v1/admin/messaging/destinations", admin(mh.listDestinations))
 		mux.Handle("POST /v1/admin/messaging/destinations", admin(mh.createDestination))
 		mux.Handle("GET /v1/admin/messaging/destinations/{id}", admin(mh.getDestination))
@@ -172,6 +172,8 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("PATCH /v1/admin/messaging/jobs/{id}", admin(mh.updateJob))
 		mux.Handle("DELETE /v1/admin/messaging/jobs/{id}", admin(mh.deleteJob))
 		mux.Handle("GET /v1/admin/messaging/deliveries", admin(mh.listDeliveries))
+		mux.Handle("GET /v1/admin/messaging/catalog", admin(mh.catalogFields))
+		mux.Handle("POST /v1/admin/messaging/templates/preview", admin(mh.previewTemplate))
 	}
 
 	if app.Presence != nil {

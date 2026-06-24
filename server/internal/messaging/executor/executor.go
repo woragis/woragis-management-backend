@@ -6,10 +6,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/woragis/management/backend/server/internal/agentworkerclient"
 	"github.com/woragis/management/backend/server/internal/apperrors"
 	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
 	messagingsvc "github.com/woragis/management/backend/server/internal/messaging/service"
+	msgtemplaterender "github.com/woragis/management/backend/server/internal/messaging/templaterender"
 	"github.com/woragis/management/backend/server/internal/models"
+	"github.com/woragis/management/backend/server/internal/telegramworkerclient"
 	"github.com/woragis/management/backend/server/internal/whatsappworkerclient"
 )
 
@@ -17,18 +20,35 @@ type Executor struct {
 	messaging *messagingsvc.Service
 	content   *contentsvc.Service
 	whatsapp  *whatsappworkerclient.Client
+	telegram  *telegramworkerclient.Client
+	agent     *agentworkerclient.Client
+	renderer  *msgtemplaterender.Engine
 }
 
-func New(messaging *messagingsvc.Service, content *contentsvc.Service, whatsapp *whatsappworkerclient.Client) *Executor {
-	return &Executor{messaging: messaging, content: content, whatsapp: whatsapp}
+func New(
+	messaging *messagingsvc.Service,
+	content *contentsvc.Service,
+	whatsapp *whatsappworkerclient.Client,
+	telegram *telegramworkerclient.Client,
+	agent *agentworkerclient.Client,
+	renderer *msgtemplaterender.Engine,
+) *Executor {
+	return &Executor{
+		messaging: messaging,
+		content:   content,
+		whatsapp:  whatsapp,
+		telegram:  telegram,
+		agent:     agent,
+		renderer:  renderer,
+	}
 }
 
 type ExecuteResult struct {
-	JobID       uuid.UUID `json:"jobId"`
-	Skipped     bool      `json:"skipped"`
-	SkipReason  string    `json:"skipReason,omitempty"`
-	Message     string    `json:"message,omitempty"`
-	DeliveryID  uuid.UUID `json:"deliveryId,omitempty"`
+	JobID      uuid.UUID `json:"jobId"`
+	Skipped    bool      `json:"skipped"`
+	SkipReason string    `json:"skipReason,omitempty"`
+	Message    string    `json:"message,omitempty"`
+	DeliveryID uuid.UUID `json:"deliveryId,omitempty"`
 }
 
 func (e *Executor) ExecuteJob(ctx context.Context, jobID uuid.UUID) (*ExecuteResult, error) {
@@ -48,59 +68,46 @@ func (e *Executor) ExecuteJob(ctx context.Context, jobID uuid.UUID) (*ExecuteRes
 		return &ExecuteResult{JobID: jobID, Skipped: true, SkipReason: "destination inactive"}, nil
 	}
 
-	message, templateSlug, externalRef, skip, skipReason, err := e.resolveMessage(ctx, job, dest)
+	message, templateSlug, externalRef, tpl, renderData, skip, skipReason, err := e.resolveMessage(ctx, job, dest)
 	if err != nil {
 		return nil, err
 	}
 	if skip {
-		_ = e.messaging.MarkJobRun(ctx, job, time.Now().UTC())
+		if err := e.finishSkipped(ctx, job, dest, templateSlug, skipReason, externalRef); err != nil {
+			return nil, err
+		}
 		return &ExecuteResult{JobID: jobID, Skipped: true, SkipReason: skipReason}, nil
 	}
 	if strings.TrimSpace(message) == "" {
+		if err := e.finishSkipped(ctx, job, dest, templateSlug, "empty message", externalRef); err != nil {
+			return nil, err
+		}
 		return &ExecuteResult{JobID: jobID, Skipped: true, SkipReason: "empty message"}, nil
 	}
 
-	status := "sent"
-	var errMsg string
-	if err := e.send(ctx, dest, message, job.ProgramAction, externalRef, templateSlug); err != nil {
-		status = "failed"
-		errMsg = err.Error()
-	}
-
-	delivery := &models.MessageDelivery{
-		JobID:         &job.ID,
-		DestinationID: dest.ID,
-		Channel:       dest.Channel,
-		ExternalID:    dest.ExternalID,
-		TemplateSlug:  templateSlug,
-		Body:          message,
-		Status:        status,
-		ErrorMessage:  errMsg,
-		ExternalRef:   externalRef,
-		SentAt:        time.Now().UTC(),
-	}
-	if err := e.messaging.RecordDelivery(ctx, delivery); err != nil {
-		return nil, err
-	}
-	_ = e.messaging.MarkJobRun(ctx, job, time.Now().UTC())
-
-	if status == "failed" {
-		return nil, apperrors.InternalErr(apperrors.CodeInternal, errMsg)
-	}
-	if externalRef != "" && e.content != nil && isLeetcodeDispatchType(strings.TrimSpace(job.ProgramAction)) {
-		if vid, err := uuid.Parse(externalRef); err == nil {
-			patch := contentsvc.WhatsappStatusPatch{}
-			switch strings.TrimSpace(job.ProgramAction) {
-			case "problem":
-				patch.ProblemSent = true
-			case "discussion":
-				patch.DiscussionSent = true
-			case "solution":
-				patch.SolutionSent = true
-			}
-			_ = e.content.PatchWhatsappStatus(ctx, vid, patch)
+	if tpl != nil && tpl.ComposeMode == models.ComposeModeAIAssisted {
+		message, err = e.composeWithAgent(ctx, tpl, message, renderData, dest)
+		if err != nil {
+			_, _ = e.recordDelivery(ctx, job, dest, templateSlug, message, models.DeliveryStatusFailed, err.Error(), externalRef)
+			return nil, apperrors.InternalErr(apperrors.CodeInternal, err.Error())
 		}
 	}
+
+	if err := e.send(ctx, dest, message, job.ProgramAction, externalRef, templateSlug); err != nil {
+		_, _ = e.recordDelivery(ctx, job, dest, templateSlug, message, models.DeliveryStatusFailed, err.Error(), externalRef)
+		return nil, apperrors.InternalErr(apperrors.CodeInternal, err.Error())
+	}
+
+	delivery, err := e.recordDelivery(ctx, job, dest, templateSlug, message, models.DeliveryStatusSent, "", externalRef)
+	if err != nil {
+		return nil, err
+	}
+	if err := e.messaging.MarkJobRun(ctx, job, time.Now().UTC()); err != nil {
+		return nil, err
+	}
+
+	e.patchLeetcodeSent(ctx, job, externalRef)
+
 	return &ExecuteResult{
 		JobID:      jobID,
 		Message:    message,
@@ -108,7 +115,94 @@ func (e *Executor) ExecuteJob(ctx context.Context, jobID uuid.UUID) (*ExecuteRes
 	}, nil
 }
 
-func (e *Executor) resolveMessage(ctx context.Context, job *models.ScheduledJob, dest *models.ChannelDestination) (message, templateSlug, externalRef string, skip bool, skipReason string, err error) {
+func (e *Executor) composeWithAgent(ctx context.Context, tpl *models.MessageTemplate, staticBody string, data map[string]string, dest *models.ChannelDestination) (string, error) {
+	if e.agent == nil || !e.agent.Enabled() {
+		return staticBody, nil
+	}
+	dataAny := map[string]any{}
+	for k, v := range data {
+		dataAny[k] = v
+	}
+	return e.agent.Compose(ctx, agentworkerclient.ComposeRequest{
+		TemplateBody: tpl.Body,
+		ComposeMode:  tpl.ComposeMode,
+		Data:         dataAny,
+		DestinationContext: map[string]any{
+			"channel":       dest.Channel,
+			"destinationId": dest.ID.String(),
+			"name":          dest.Name,
+			"aiPromptHint":  tpl.AIPromptHint,
+			"staticPreview": staticBody,
+		},
+	})
+}
+
+func (e *Executor) patchLeetcodeSent(ctx context.Context, job *models.ScheduledJob, externalRef string) {
+	if externalRef == "" || e.content == nil {
+		return
+	}
+	if !isLeetcodeDispatchType(strings.TrimSpace(job.ProgramAction)) {
+		return
+	}
+	vid, err := uuid.Parse(externalRef)
+	if err != nil {
+		return
+	}
+	patch := contentsvc.WhatsappStatusPatch{}
+	switch strings.TrimSpace(job.ProgramAction) {
+	case "problem":
+		patch.ProblemSent = true
+	case "discussion":
+		patch.DiscussionSent = true
+	case "solution":
+		patch.SolutionSent = true
+	}
+	_ = e.content.PatchWhatsappStatus(ctx, vid, patch)
+}
+
+func (e *Executor) resolveMessage(ctx context.Context, job *models.ScheduledJob, dest *models.ChannelDestination) (message, templateSlug, externalRef string, tpl *models.MessageTemplate, renderData map[string]string, skip bool, skipReason string, err error) {
+	action := normalizeProgramAction(job)
+	if isLeetcodeDispatchType(action) && strings.TrimSpace(job.TemplateSlug) == "" {
+		msg, slug, ref, t, sk, reason, e := e.resolveLeetcodeLegacy(ctx, action)
+		return msg, slug, ref, t, nil, sk, reason, e
+	}
+	if strings.TrimSpace(job.TemplateSlug) == "" {
+		return "", "", "", nil, nil, true, "no template or program action", nil
+	}
+	tpl, err = e.messaging.FindTemplateBySlug(ctx, job.TemplateSlug, dest.ID)
+	if err != nil {
+		return "", job.TemplateSlug, "", nil, nil, true, "template not found", nil
+	}
+	templateSlug = tpl.Slug
+
+	if e.renderer != nil {
+		res, err := e.renderer.Render(ctx, msgtemplaterender.RenderInput{Template: tpl, Job: job})
+		if err != nil {
+			return "", templateSlug, "", tpl, nil, false, "", err
+		}
+		if res.Skipped {
+			return "", templateSlug, res.ExternalRef, tpl, nil, true, res.SkipReason, nil
+		}
+		return res.Body, templateSlug, res.ExternalRef, tpl, res.Data, false, "", nil
+	}
+	return tpl.Body, templateSlug, "", tpl, nil, false, "", nil
+}
+
+func (e *Executor) resolveLeetcodeLegacy(ctx context.Context, dispatchType string) (message, templateSlug, externalRef string, tpl *models.MessageTemplate, skip bool, skipReason string, err error) {
+	if e.content == nil {
+		return "", "", "", nil, true, "content service unavailable", nil
+	}
+	d, err := e.content.Dispatch(ctx, dispatchType, "")
+	if err != nil {
+		return "", "", "", nil, false, "", err
+	}
+	if d.Skip {
+		return "", d.TemplateSlug, d.VideoID, nil, true, d.SkipReason, nil
+	}
+	return d.Message, d.TemplateSlug, d.VideoID, nil, false, "", nil
+}
+
+func normalizeProgramAction(job *models.ScheduledJob) string {
 	action := strings.TrimSpace(job.ProgramAction)
 	if action == "" && strings.HasPrefix(strings.TrimSpace(job.TemplateSlug), "leetcode/") {
 		action = strings.TrimPrefix(strings.TrimSpace(job.TemplateSlug), "leetcode/")
@@ -116,55 +210,7 @@ func (e *Executor) resolveMessage(ctx context.Context, job *models.ScheduledJob,
 	if strings.HasPrefix(action, "leetcode/") {
 		action = strings.TrimPrefix(action, "leetcode/")
 	}
-
-	switch {
-	case strings.HasPrefix(action, "leetcode") || isLeetcodeDispatchType(action):
-		dispatchType := action
-		if strings.Contains(action, "/") {
-			parts := strings.SplitN(action, "/", 2)
-			if len(parts) == 2 {
-				dispatchType = parts[1]
-			}
-		}
-		if e.content == nil {
-			return "", "", "", true, "content service unavailable", nil
-		}
-		d, err := e.content.Dispatch(ctx, dispatchType, "")
-		if err != nil {
-			return "", "", "", false, "", err
-		}
-		if d.Skip {
-			return "", d.TemplateSlug, d.VideoID, true, d.SkipReason, nil
-		}
-		return d.Message, d.TemplateSlug, d.VideoID, false, "", nil
-	default:
-		if job.TemplateSlug == "" {
-			return "", "", "", true, "no template or program action", nil
-		}
-		tpl, err := e.messaging.ListTemplates(ctx, messagingsvc.TemplateFilter{
-			ProgramSlug:   "custom",
-			DestinationID: &dest.ID,
-			ActiveOnly:    true,
-		})
-		if err != nil {
-			return "", "", "", false, "", err
-		}
-		for _, t := range tpl {
-			if t.Slug == job.TemplateSlug {
-				return t.Body, t.Slug, "", false, "", nil
-			}
-		}
-		all, err := e.messaging.ListTemplates(ctx, messagingsvc.TemplateFilter{ActiveOnly: true})
-		if err != nil {
-			return "", "", "", false, "", err
-		}
-		for _, t := range all {
-			if t.Slug == job.TemplateSlug {
-				return t.Body, t.Slug, "", false, "", nil
-			}
-		}
-		return "", job.TemplateSlug, "", true, "template not found", nil
-	}
+	return action
 }
 
 func isLeetcodeDispatchType(t string) bool {
@@ -183,16 +229,30 @@ func (e *Executor) send(ctx context.Context, dest *models.ChannelDestination, me
 			return apperrors.Unavailable(apperrors.CodeWhatsappWorkerUnavailable, apperrors.MsgWhatsappWorkerUnavailable)
 		}
 		return e.whatsapp.Send(ctx, whatsappworkerclient.SendRequest{
-			Message:      message,
-			ExternalID:   dest.ExternalID,
+			Message:       message,
+			ExternalID:    dest.ExternalID,
 			DestinationID: dest.ID.String(),
-			Type:         dispatchType,
-			VideoID:      videoID,
-			TemplateSlug: templateSlug,
+			Type:          dispatchType,
+			VideoID:       videoID,
+			TemplateSlug:  templateSlug,
 		})
 	case models.ChannelTelegram:
-		return apperrors.Unavailable(apperrors.CodeInternal, "Telegram delivery not wired yet.")
+		if e.telegram == nil || !e.telegram.Enabled() {
+			return apperrors.Unavailable(apperrors.CodeInternal, "Telegram worker not configured.")
+		}
+		return e.telegram.Send(ctx, telegramworkerclient.SendRequest{
+			Message:    message,
+			ExternalID: dest.ExternalID,
+		})
 	default:
 		return apperrors.Invalid(apperrors.CodeInternal, "Unsupported channel.")
 	}
+}
+
+// PreviewTemplate renders a template without sending (admin preview).
+func (e *Executor) PreviewTemplate(ctx context.Context, tpl *models.MessageTemplate, job *models.ScheduledJob) (*msgtemplaterender.RenderResult, error) {
+	if e.renderer == nil {
+		return &msgtemplaterender.RenderResult{Body: tpl.Body}, nil
+	}
+	return e.renderer.Render(ctx, msgtemplaterender.RenderInput{Template: tpl, Job: job})
 }

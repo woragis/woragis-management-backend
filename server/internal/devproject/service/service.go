@@ -152,6 +152,21 @@ func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*models.Project, e
 	return p, nil
 }
 
+func (s *Service) GetBySlug(ctx context.Context, slug string) (*models.Project, error) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return nil, apperrors.Invalid(apperrors.CodeProjectGetV1ServiceNotFound, "Project slug is required.")
+	}
+	p, err := s.repo.FindProjectBySlug(ctx, slug)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperrors.NotFound(apperrors.CodeProjectGetV1ServiceNotFound, apperrors.MsgProjectGetV1ServiceNotFound)
+		}
+		return nil, apperrors.InternalCause(apperrors.CodeProjectGetV1ServiceLoadFailed, apperrors.MsgProjectGetV1ServiceLoadFailed, err)
+	}
+	return p, nil
+}
+
 func (s *Service) Create(ctx context.Context, in CreateProjectInput) (*models.Project, error) {
 	name := strings.TrimSpace(in.Name)
 	if name == "" {

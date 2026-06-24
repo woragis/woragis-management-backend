@@ -23,6 +23,12 @@ type Service struct {
 	whatsappWorker   *whatsappworkerclient.Client
 	webhookURL       string
 	defaultThumbSize string
+	msgTemplates     MessagingTemplateLookup
+}
+
+// MessagingTemplateLookup resolves unified MessageTemplate bodies (optional).
+type MessagingTemplateLookup interface {
+	TemplateBodyForProgram(ctx context.Context, programSlug, slug string) (string, bool)
 }
 
 func New(repo *repository.Repository, media *mediasvc.Service, creatives *creativesclient.Client, whatsappWorker *whatsappworkerclient.Client, webhookURL, defaultThumbSize string) *Service {
@@ -37,6 +43,10 @@ func New(repo *repository.Repository, media *mediasvc.Service, creatives *creati
 		webhookURL:       strings.TrimSpace(webhookURL),
 		defaultThumbSize: defaultThumbSize,
 	}
+}
+
+func (s *Service) SetMessagingTemplates(lookup MessagingTemplateLookup) {
+	s.msgTemplates = lookup
 }
 
 type CreateVideoInput struct {

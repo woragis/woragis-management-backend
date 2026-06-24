@@ -4,18 +4,70 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/woragis/management/backend/server/internal/apperrors"
+	"github.com/woragis/management/backend/server/internal/messaging/executor"
 	messagingsvc "github.com/woragis/management/backend/server/internal/messaging/service"
+	msgtemplaterender "github.com/woragis/management/backend/server/internal/messaging/templaterender"
+	"github.com/woragis/management/backend/server/internal/models"
+	"gorm.io/datatypes"
 )
 
 type messagingHandler struct {
-	svc *messagingsvc.Service
+	svc       *messagingsvc.Service
+	scheduler *executor.Executor
 }
 
-func newMessagingHandler(svc *messagingsvc.Service) *messagingHandler {
-	return &messagingHandler{svc: svc}
+func newMessagingHandler(svc *messagingsvc.Service, scheduler *executor.Executor) *messagingHandler {
+	return &messagingHandler{svc: svc, scheduler: scheduler}
+}
+
+func (h *messagingHandler) catalogFields(w http.ResponseWriter, r *http.Request) {
+	program := r.URL.Query().Get("program")
+	if program == "" {
+		program = "custom"
+	}
+	apperrors.WriteJSON(w, http.StatusOK, msgtemplaterender.CatalogFields(program))
+}
+
+func (h *messagingHandler) previewTemplate(w http.ResponseWriter, r *http.Request) {
+	var body templatePreviewBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeInternal, "Request body is invalid."))
+		return
+	}
+	tplID, err := uuid.Parse(strings.TrimSpace(body.TemplateID))
+	if err != nil {
+		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeInternal, "Invalid template id."))
+		return
+	}
+	tpl, err := h.svc.GetTemplate(r.Context(), tplID)
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	job := &models.ScheduledJob{
+		ProgramAction: strings.TrimSpace(body.ProgramAction),
+		DataSource:    jsonRawMap(body.DataSource),
+	}
+	if h.scheduler == nil {
+		apperrors.WriteJSON(w, http.StatusOK, map[string]any{"body": tpl.Body, "skipped": false})
+		return
+	}
+	res, err := h.scheduler.PreviewTemplate(r.Context(), tpl, job)
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	apperrors.WriteJSON(w, http.StatusOK, map[string]any{
+		"body":        res.Body,
+		"data":        res.Data,
+		"skipped":     res.Skipped,
+		"skipReason":  res.SkipReason,
+		"externalRef": res.ExternalRef,
+	})
 }
 
 func (h *messagingHandler) listDestinations(w http.ResponseWriter, r *http.Request) {
@@ -310,14 +362,15 @@ func (b destinationUpdateBody) toUpdate() messagingsvc.UpdateDestinationInput {
 }
 
 type messageTemplateBody struct {
-	DestinationID *uuid.UUID `json:"destinationId"`
-	ProgramSlug   string     `json:"programSlug"`
-	Slug          string     `json:"slug"`
-	Name          string     `json:"name"`
-	Body          string     `json:"body"`
-	ComposeMode   string     `json:"composeMode"`
-	AIPromptHint  string     `json:"aiPromptHint"`
-	Active        bool       `json:"active"`
+	DestinationID *uuid.UUID        `json:"destinationId"`
+	ProgramSlug   string            `json:"programSlug"`
+	Slug          string            `json:"slug"`
+	Name          string            `json:"name"`
+	Body          string            `json:"body"`
+	ComposeMode   string            `json:"composeMode"`
+	AIPromptHint  string            `json:"aiPromptHint"`
+	Bindings      map[string]string `json:"bindings"`
+	Active        bool              `json:"active"`
 }
 
 func (b messageTemplateBody) toCreate() messagingsvc.CreateTemplateInput {
@@ -325,14 +378,15 @@ func (b messageTemplateBody) toCreate() messagingsvc.CreateTemplateInput {
 }
 
 type messageTemplateUpdateBody struct {
-	DestinationID *uuid.UUID `json:"destinationId"`
-	ProgramSlug   *string    `json:"programSlug"`
-	Slug          *string    `json:"slug"`
-	Name          *string    `json:"name"`
-	Body          *string    `json:"body"`
-	ComposeMode   *string    `json:"composeMode"`
-	AIPromptHint  *string    `json:"aiPromptHint"`
-	Active        *bool      `json:"active"`
+	DestinationID *uuid.UUID        `json:"destinationId"`
+	ProgramSlug   *string           `json:"programSlug"`
+	Slug          *string           `json:"slug"`
+	Name          *string           `json:"name"`
+	Body          *string           `json:"body"`
+	ComposeMode   *string           `json:"composeMode"`
+	AIPromptHint  *string           `json:"aiPromptHint"`
+	Bindings      map[string]string `json:"bindings"`
+	Active        *bool             `json:"active"`
 }
 
 func (b messageTemplateUpdateBody) toUpdate() messagingsvc.UpdateTemplateInput {
@@ -349,17 +403,22 @@ func (b messageTemplateUpdateBody) toUpdate() messagingsvc.UpdateTemplateInput {
 		in.DestinationID = b.DestinationID
 		in.DestinationSet = true
 	}
+	if b.Bindings != nil {
+		in.Bindings = b.Bindings
+		in.BindingsSet = true
+	}
 	return in
 }
 
 type jobBody struct {
-	Name          string    `json:"name"`
-	DestinationID uuid.UUID `json:"destinationId"`
-	TemplateSlug  string    `json:"templateSlug"`
-	ProgramAction string    `json:"programAction"`
-	CronExpr      string    `json:"cronExpr"`
-	Timezone      string    `json:"timezone"`
-	Enabled       bool      `json:"enabled"`
+	Name          string         `json:"name"`
+	DestinationID uuid.UUID      `json:"destinationId"`
+	TemplateSlug  string         `json:"templateSlug"`
+	ProgramAction string         `json:"programAction"`
+	DataSource    map[string]any `json:"dataSource"`
+	CronExpr      string         `json:"cronExpr"`
+	Timezone      string         `json:"timezone"`
+	Enabled       bool           `json:"enabled"`
 }
 
 func (b jobBody) toCreate() messagingsvc.CreateJobInput {
@@ -367,15 +426,43 @@ func (b jobBody) toCreate() messagingsvc.CreateJobInput {
 }
 
 type jobUpdateBody struct {
-	Name          *string    `json:"name"`
-	DestinationID *uuid.UUID `json:"destinationId"`
-	TemplateSlug  *string    `json:"templateSlug"`
-	ProgramAction *string    `json:"programAction"`
-	CronExpr      *string    `json:"cronExpr"`
-	Timezone      *string    `json:"timezone"`
-	Enabled       *bool      `json:"enabled"`
+	Name          *string        `json:"name"`
+	DestinationID *uuid.UUID     `json:"destinationId"`
+	TemplateSlug  *string        `json:"templateSlug"`
+	ProgramAction *string        `json:"programAction"`
+	DataSource    map[string]any `json:"dataSource"`
+	CronExpr      *string        `json:"cronExpr"`
+	Timezone      *string        `json:"timezone"`
+	Enabled       *bool          `json:"enabled"`
 }
 
 func (b jobUpdateBody) toUpdate() messagingsvc.UpdateJobInput {
-	return messagingsvc.UpdateJobInput(b)
+	in := messagingsvc.UpdateJobInput{
+		Name:          b.Name,
+		DestinationID: b.DestinationID,
+		TemplateSlug:  b.TemplateSlug,
+		ProgramAction: b.ProgramAction,
+		CronExpr:      b.CronExpr,
+		Timezone:      b.Timezone,
+		Enabled:       b.Enabled,
+	}
+	if b.DataSource != nil {
+		in.DataSource = b.DataSource
+		in.DataSourceSet = true
+	}
+	return in
+}
+
+type templatePreviewBody struct {
+	TemplateID    string         `json:"templateId"`
+	ProgramAction string         `json:"programAction"`
+	DataSource    map[string]any `json:"dataSource"`
+}
+
+func jsonRawMap(m map[string]any) datatypes.JSON {
+	if len(m) == 0 {
+		return datatypes.JSON([]byte("{}"))
+	}
+	b, _ := json.Marshal(m)
+	return datatypes.JSON(b)
 }

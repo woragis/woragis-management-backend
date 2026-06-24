@@ -172,19 +172,22 @@ type CreateTemplateInput struct {
 	Body          string
 	ComposeMode   string
 	AIPromptHint  string
+	Bindings      map[string]string
 	Active        bool
 }
 
 type UpdateTemplateInput struct {
-	DestinationID *uuid.UUID
+	DestinationID  *uuid.UUID
 	DestinationSet bool
-	ProgramSlug   *string
-	Slug          *string
-	Name          *string
-	Body          *string
-	ComposeMode   *string
-	AIPromptHint  *string
-	Active        *bool
+	ProgramSlug    *string
+	Slug           *string
+	Name           *string
+	Body           *string
+	ComposeMode    *string
+	AIPromptHint   *string
+	Bindings       map[string]string
+	BindingsSet    bool
+	Active         *bool
 }
 
 func (s *Service) ListTemplates(ctx context.Context, f TemplateFilter) ([]models.MessageTemplate, error) {
@@ -221,6 +224,7 @@ func (s *Service) CreateTemplate(ctx context.Context, in CreateTemplateInput) (*
 		Body:          body,
 		ComposeMode:   normalizeComposeMode(in.ComposeMode),
 		AIPromptHint:  strings.TrimSpace(in.AIPromptHint),
+		Bindings:      jsonMapString(in.Bindings),
 		Active:        in.Active,
 	}
 	if err := s.repo.CreateTemplate(ctx, row); err != nil {
@@ -259,6 +263,9 @@ func (s *Service) UpdateTemplate(ctx context.Context, id uuid.UUID, in UpdateTem
 	if in.AIPromptHint != nil {
 		row.AIPromptHint = strings.TrimSpace(*in.AIPromptHint)
 	}
+	if in.BindingsSet {
+		row.Bindings = jsonMapString(in.Bindings)
+	}
 	if in.Active != nil {
 		row.Active = *in.Active
 	}
@@ -283,6 +290,7 @@ type CreateJobInput struct {
 	DestinationID uuid.UUID
 	TemplateSlug  string
 	ProgramAction string
+	DataSource    map[string]any
 	CronExpr      string
 	Timezone      string
 	Enabled       bool
@@ -293,6 +301,8 @@ type UpdateJobInput struct {
 	DestinationID *uuid.UUID
 	TemplateSlug  *string
 	ProgramAction *string
+	DataSource    map[string]any
+	DataSourceSet bool
 	CronExpr      *string
 	Timezone      *string
 	Enabled       *bool
@@ -350,6 +360,7 @@ func (s *Service) CreateJob(ctx context.Context, in CreateJobInput) (*models.Sch
 		DestinationID: in.DestinationID,
 		TemplateSlug:  strings.TrimSpace(in.TemplateSlug),
 		ProgramAction: strings.TrimSpace(in.ProgramAction),
+		DataSource:    jsonMap(in.DataSource),
 		CronExpr:      cronExpr,
 		Timezone:      tz,
 		Enabled:       in.Enabled,
@@ -380,6 +391,9 @@ func (s *Service) UpdateJob(ctx context.Context, id uuid.UUID, in UpdateJobInput
 	}
 	if in.ProgramAction != nil {
 		row.ProgramAction = strings.TrimSpace(*in.ProgramAction)
+	}
+	if in.DataSourceSet {
+		row.DataSource = jsonMap(in.DataSource)
 	}
 	recalc := false
 	if in.CronExpr != nil {
@@ -441,6 +455,37 @@ func (s *Service) ListDeliveries(ctx context.Context, destinationID *uuid.UUID, 
 	return rows, nil
 }
 
+func (s *Service) FindTemplateBySlug(ctx context.Context, slug string, destinationID uuid.UUID) (*models.MessageTemplate, error) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return nil, apperrors.NotFound(apperrors.CodeInternal, "Template not found.")
+	}
+	destID := &destinationID
+	row, err := s.repo.FindTemplateBySlug(ctx, "", slug, destID)
+	if err == nil {
+		return row, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, apperrors.InternalCause(apperrors.CodeInternal, "Failed to load template.", err)
+	}
+	row, err = s.repo.FindTemplateBySlug(ctx, "", slug, nil)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperrors.NotFound(apperrors.CodeInternal, "Template not found.")
+		}
+		return nil, apperrors.InternalCause(apperrors.CodeInternal, "Failed to load template.", err)
+	}
+	return row, nil
+}
+
+func (s *Service) TemplateBodyForProgram(ctx context.Context, programSlug, slug string) (string, bool) {
+	row, err := s.repo.FindTemplateBySlug(ctx, strings.TrimSpace(programSlug), strings.TrimSpace(slug), nil)
+	if err != nil {
+		return "", false
+	}
+	return row.Body, true
+}
+
 func normalizeChannel(v string) string {
 	switch strings.ToLower(strings.TrimSpace(v)) {
 	case models.ChannelWhatsApp, models.ChannelTelegram:
@@ -468,6 +513,14 @@ func jsonSlice(items []string) datatypes.JSON {
 }
 
 func jsonMap(m map[string]any) datatypes.JSON {
+	if len(m) == 0 {
+		return datatypes.JSON([]byte("{}"))
+	}
+	b, _ := json.Marshal(m)
+	return datatypes.JSON(b)
+}
+
+func jsonMapString(m map[string]string) datatypes.JSON {
 	if len(m) == 0 {
 		return datatypes.JSON([]byte("{}"))
 	}

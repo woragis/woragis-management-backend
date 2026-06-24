@@ -13,6 +13,10 @@ const (
 
 	ComposeModeStatic     = "static"
 	ComposeModeAIAssisted = "ai_assisted"
+
+	DeliveryStatusSent    = "sent"
+	DeliveryStatusFailed  = "failed"
+	DeliveryStatusSkipped = "skipped"
 )
 
 type ChannelDestination struct {
@@ -37,8 +41,9 @@ type MessageTemplate struct {
 	Name          string     `gorm:"size:200;not null" json:"name"`
 	Body          string     `gorm:"type:text;not null" json:"body"`
 	ComposeMode   string     `gorm:"column:compose_mode;size:32;not null;default:static" json:"composeMode"`
-	AIPromptHint  string     `gorm:"column:ai_prompt_hint;type:text" json:"aiPromptHint"`
-	Active        bool       `gorm:"not null;default:true" json:"active"`
+	AIPromptHint  string         `gorm:"column:ai_prompt_hint;type:text" json:"aiPromptHint"`
+	Bindings      datatypes.JSON `gorm:"type:jsonb;not null;default:'{}'" json:"bindings"`
+	Active        bool           `gorm:"not null;default:true" json:"active"`
 	CreatedAt     time.Time  `json:"createdAt"`
 	UpdatedAt     time.Time  `json:"updatedAt"`
 }
@@ -48,8 +53,9 @@ type ScheduledJob struct {
 	Name          string     `gorm:"size:200;not null" json:"name"`
 	DestinationID uuid.UUID  `gorm:"column:destination_id;type:uuid;not null;index" json:"destinationId"`
 	TemplateSlug  string     `gorm:"column:template_slug;size:64" json:"templateSlug"`
-	ProgramAction string     `gorm:"column:program_action;size:64;index" json:"programAction"`
-	CronExpr      string     `gorm:"column:cron_expr;size:64;not null" json:"cronExpr"`
+	ProgramAction string         `gorm:"column:program_action;size:64;index" json:"programAction"`
+	DataSource    datatypes.JSON `gorm:"column:data_source;type:jsonb;not null;default:'{}'" json:"dataSource"`
+	CronExpr      string         `gorm:"column:cron_expr;size:64;not null" json:"cronExpr"`
 	Timezone      string     `gorm:"size:64;not null;default:America/Sao_Paulo" json:"timezone"`
 	Enabled       bool       `gorm:"not null;default:true;index" json:"enabled"`
 	LastRunAt     *time.Time `gorm:"column:last_run_at" json:"lastRunAt"`

@@ -30,7 +30,10 @@ import (
 	"github.com/woragis/management/backend/server/internal/messaging/executor"
 	contentrepo "github.com/woragis/management/backend/server/internal/content/repository"
 	contentsvc "github.com/woragis/management/backend/server/internal/content/service"
+	"github.com/woragis/management/backend/server/internal/agentworkerclient"
 	"github.com/woragis/management/backend/server/internal/creativesclient"
+	msgtemplaterender "github.com/woragis/management/backend/server/internal/messaging/templaterender"
+	"github.com/woragis/management/backend/server/internal/telegramworkerclient"
 	"github.com/woragis/management/backend/server/internal/whatsappworkerclient"
 	financerepo "github.com/woragis/management/backend/server/internal/finance/repository"
 	financesvc "github.com/woragis/management/backend/server/internal/finance/service"
@@ -189,7 +192,18 @@ func main() {
 
 	messagingRepo := messagingrepo.New(db)
 	messagingSvc := messagingsvc.New(messagingRepo)
-	schedulerExec := executor.New(messagingSvc, contentSvc, whatsappWorkerClient)
+	contentSvc.SetMessagingTemplates(messagingSvc)
+
+	msgRenderer := msgtemplaterender.NewEngine(contentSvc, devSvc)
+	agentWorkerClient := agentworkerclient.New(agentworkerclient.Config{
+		BaseURL:     os.Getenv("AGENT_WORKER_URL"),
+		AgentAPIKey: strings.TrimSpace(os.Getenv("AGENT_API_KEY")),
+	})
+	telegramWorkerClient := telegramworkerclient.New(telegramworkerclient.Config{
+		BaseURL:      os.Getenv("TELEGRAM_WORKER_URL"),
+		WorkerAPIKey: os.Getenv("WORKER_API_KEY"),
+	})
+	schedulerExec := executor.New(messagingSvc, contentSvc, whatsappWorkerClient, telegramWorkerClient, agentWorkerClient, msgRenderer)
 
 	presenceRepo := presencerepo.New(db)
 	presenceSvc := presencesvc.New(presenceRepo)

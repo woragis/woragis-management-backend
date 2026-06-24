@@ -48,6 +48,18 @@ func (r *Repository) FindProjectByID(ctx context.Context, id uuid.UUID) (*models
 	return &p, nil
 }
 
+func (r *Repository) FindProjectBySlug(ctx context.Context, slug string) (*models.Project, error) {
+	var p models.Project
+	err := r.db.WithContext(ctx).Where("slug = ?", slug).First(&p).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, gorm.ErrRecordNotFound
+		}
+		return nil, fmt.Errorf("find project by slug: %w", err)
+	}
+	return &p, nil
+}
+
 func (r *Repository) FindProjectByPublicSlug(ctx context.Context, slug string) (*models.Project, error) {
 	var p models.Project
 	err := r.db.WithContext(ctx).

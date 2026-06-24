@@ -250,12 +250,12 @@ func (s *Service) dispatchProblem(ctx context.Context, settings *models.Leetcode
 	if video.WhatsappProblemSentAt != nil {
 		return &DispatchResult{Skip: true, SkipReason: "already sent", TemplateSlug: models.WhatsappTplProblemDaily, VideoID: video.ID.String()}, nil
 	}
-	tpl, err := s.repo.GetWhatsappTemplateBySlug(ctx, models.WhatsappTplProblemDaily)
+	tplBody, err := s.templateBody(ctx, "leetcode", models.WhatsappTplProblemDaily)
 	if err != nil {
 		return nil, err
 	}
-	msg := templaterender.Render(tpl.Body, templaterender.FromVideo(video, settings))
-	return &DispatchResult{VideoID: video.ID.String(), TemplateSlug: tpl.Slug, Message: msg}, nil
+	msg := templaterender.Render(tplBody, templaterender.FromVideo(video, settings))
+	return &DispatchResult{VideoID: video.ID.String(), TemplateSlug: models.WhatsappTplProblemDaily, Message: msg}, nil
 }
 
 func (s *Service) dispatchDiscussion(ctx context.Context, settings *models.LeetcodeChannelSettings, day time.Time) (*DispatchResult, error) {
@@ -269,12 +269,12 @@ func (s *Service) dispatchDiscussion(ctx context.Context, settings *models.Leetc
 	if video.WhatsappDiscussionSentAt != nil {
 		return &DispatchResult{Skip: true, SkipReason: "already sent", TemplateSlug: models.WhatsappTplDiscussionNudge, VideoID: video.ID.String()}, nil
 	}
-	tpl, err := s.repo.GetWhatsappTemplateBySlug(ctx, models.WhatsappTplDiscussionNudge)
+	tplBody, err := s.templateBody(ctx, "leetcode", models.WhatsappTplDiscussionNudge)
 	if err != nil {
 		return nil, err
 	}
-	msg := templaterender.Render(tpl.Body, templaterender.FromVideo(video, settings))
-	return &DispatchResult{VideoID: video.ID.String(), TemplateSlug: tpl.Slug, Message: msg}, nil
+	msg := templaterender.Render(tplBody, templaterender.FromVideo(video, settings))
+	return &DispatchResult{VideoID: video.ID.String(), TemplateSlug: models.WhatsappTplDiscussionNudge, Message: msg}, nil
 }
 
 func (s *Service) dispatchSolution(ctx context.Context, settings *models.LeetcodeChannelSettings, day time.Time) (*DispatchResult, error) {
@@ -288,12 +288,12 @@ func (s *Service) dispatchSolution(ctx context.Context, settings *models.Leetcod
 	if video.YoutubeURL == nil || strings.TrimSpace(*video.YoutubeURL) == "" {
 		return &DispatchResult{Skip: true, SkipReason: "youtube url missing", TemplateSlug: models.WhatsappTplSolutionVideo, VideoID: video.ID.String()}, nil
 	}
-	tpl, err := s.repo.GetWhatsappTemplateBySlug(ctx, models.WhatsappTplSolutionVideo)
+	tplBody, err := s.templateBody(ctx, "leetcode", models.WhatsappTplSolutionVideo)
 	if err != nil {
 		return nil, err
 	}
-	msg := templaterender.Render(tpl.Body, templaterender.FromVideo(video, settings))
-	return &DispatchResult{VideoID: video.ID.String(), TemplateSlug: tpl.Slug, Message: msg}, nil
+	msg := templaterender.Render(tplBody, templaterender.FromVideo(video, settings))
+	return &DispatchResult{VideoID: video.ID.String(), TemplateSlug: models.WhatsappTplSolutionVideo, Message: msg}, nil
 }
 
 func (s *Service) dispatchWeekly(ctx context.Context, settings *models.LeetcodeChannelSettings, day time.Time) (*DispatchResult, error) {
@@ -312,7 +312,7 @@ func (s *Service) dispatchWeekly(ctx context.Context, settings *models.LeetcodeC
 	if len(videos) == 0 {
 		return &DispatchResult{Skip: true, SkipReason: "no problems this week", TemplateSlug: models.WhatsappTplWeeklySummary}, nil
 	}
-	tpl, err := s.repo.GetWhatsappTemplateBySlug(ctx, models.WhatsappTplWeeklySummary)
+	tplBody, err := s.templateBody(ctx, "leetcode", models.WhatsappTplWeeklySummary)
 	if err != nil {
 		return nil, err
 	}
@@ -320,8 +320,8 @@ func (s *Service) dispatchWeekly(ctx context.Context, settings *models.LeetcodeC
 	if settings.NextTheme != nil {
 		vars.NextTheme = strings.TrimSpace(*settings.NextTheme)
 	}
-	msg := templaterender.Render(tpl.Body, vars)
-	return &DispatchResult{TemplateSlug: tpl.Slug, Message: msg}, nil
+	msg := templaterender.Render(tplBody, vars)
+	return &DispatchResult{TemplateSlug: models.WhatsappTplWeeklySummary, Message: msg}, nil
 }
 
 func (s *Service) PreviewWhatsapp(ctx context.Context, videoID uuid.UUID, templateSlug string) (string, error) {
