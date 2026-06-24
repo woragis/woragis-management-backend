@@ -25,6 +25,7 @@ import (
 	messagingrepo "github.com/woragis/management/backend/server/internal/messaging/repository"
 	messagingsvc "github.com/woragis/management/backend/server/internal/messaging/service"
 	presencerepo "github.com/woragis/management/backend/server/internal/presence/repository"
+	presencereminder "github.com/woragis/management/backend/server/internal/presence/reminder"
 	presencesvc "github.com/woragis/management/backend/server/internal/presence/service"
 	"github.com/woragis/management/backend/server/internal/messaging/executor"
 	contentrepo "github.com/woragis/management/backend/server/internal/content/repository"
@@ -111,6 +112,7 @@ func main() {
 		&models.SocialCampaign{},
 		&models.PostTemplate{},
 		&models.SocialPost{},
+		&models.PresenceSettings{},
 	); err != nil {
 		log.Fatalf("automigrate: %v", err)
 	}
@@ -191,6 +193,10 @@ func main() {
 
 	presenceRepo := presencerepo.New(db)
 	presenceSvc := presencesvc.New(presenceRepo)
+	if _, err := presenceRepo.EnsureSettings(context.Background()); err != nil {
+		log.Fatalf("default presence settings: %v", err)
+	}
+	presenceReminderExec := presencereminder.New(presenceSvc, messagingSvc, devSvc, whatsappWorkerClient)
 
 	workerAPIKey := strings.TrimSpace(os.Getenv("WORKER_API_KEY"))
 	if workerAPIKey == "" {
@@ -218,8 +224,9 @@ func main() {
 		Content:      contentSvc,
 		Personality:  personalitySvc,
 		Messaging:    messagingSvc,
-		Presence:     presenceSvc,
-		Scheduler:    schedulerExec,
+		Presence:         presenceSvc,
+		PresenceReminder: presenceReminderExec,
+		Scheduler:        schedulerExec,
 	}
 
 	cfg := middleware.LoadConfigFromEnv()

@@ -36,7 +36,8 @@ Projetos no Woragis não são só repositórios: têm intenção, maturidade, mo
 | **P1** | API + UI Presence (campaigns, templates, posts) | ✅ |
 | **P2** | Aba Presence no projeto, templates, limites por plataforma, copiar | ✅ |
 | **P3** | Agente: list/create posts, apply template via tools | ✅ |
-| **P4** | Publicação automática (APIs oficiais) | Futuro |
+| **P4a** | Lembretes WhatsApp via scheduler + settings | ✅ |
+| **P4b** | Publicação automática (APIs oficiais) | Futuro |
 
 ## Limites por plataforma (UI)
 
@@ -73,4 +74,6 @@ Filtros posts: `projectId`, `campaignId`, `platform`, `goal`, `status`.
 | `apply_post_template` | Renderiza template + vars do projeto (preview) |
 | `create_social_post` | Cria draft/scheduled; bloqueia `published` na API |
 
-## Próximo passo sugerido (P4)
+## Próximo passo sugerido (P4b)
+
+OAuth + adapters LinkedIn / Reddit / X para publicar direto da API (sem copiar manualmente).

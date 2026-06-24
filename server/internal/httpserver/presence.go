@@ -269,6 +269,42 @@ func (h *presenceHandler) deletePost(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *presenceHandler) getSettings(w http.ResponseWriter, r *http.Request) {
+	row, err := h.svc.GetSettings(r.Context())
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	apperrors.WriteJSON(w, http.StatusOK, row)
+}
+
+func (h *presenceHandler) updateSettings(w http.ResponseWriter, r *http.Request) {
+	var body presenceSettingsBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeInternal, "Request body is invalid."))
+		return
+	}
+	row, err := h.svc.UpdateSettings(r.Context(), body.toUpdate())
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	apperrors.WriteJSON(w, http.StatusOK, row)
+}
+
+type presenceSettingsBody struct {
+	RemindersEnabled     *bool      `json:"remindersEnabled"`
+	DefaultDestinationID *uuid.UUID `json:"defaultDestinationId"`
+}
+
+func (b presenceSettingsBody) toUpdate() presencesvc.UpdateSettingsInput {
+	return presencesvc.UpdateSettingsInput{
+		RemindersEnabled:     b.RemindersEnabled,
+		DefaultDestinationID: b.DefaultDestinationID,
+		DestinationSet:       true,
+	}
+}
+
 type campaignBody struct {
 	Name        string     `json:"name"`
 	Goal        string     `json:"goal"`
@@ -350,20 +386,21 @@ func (b postTemplateUpdateBody) toUpdate() presencesvc.UpdateTemplateInput {
 }
 
 type socialPostBody struct {
-	ProjectID    *uuid.UUID `json:"projectId"`
-	CampaignID   *uuid.UUID `json:"campaignId"`
-	Platform     string     `json:"platform"`
-	Goal         string     `json:"goal"`
-	Status       string     `json:"status"`
-	Title        string     `json:"title"`
-	Body         string     `json:"body"`
-	Hook         string     `json:"hook"`
-	CTA          string     `json:"cta"`
-	TemplateSlug string     `json:"templateSlug"`
-	ScheduledAt  *string    `json:"scheduledAt"`
-	PublishedAt  *string    `json:"publishedAt"`
-	PublishedURL string     `json:"publishedUrl"`
-	Notes        string     `json:"notes"`
+	ProjectID           *uuid.UUID `json:"projectId"`
+	CampaignID          *uuid.UUID `json:"campaignId"`
+	Platform            string     `json:"platform"`
+	Goal                string     `json:"goal"`
+	Status              string     `json:"status"`
+	Title               string     `json:"title"`
+	Body                string     `json:"body"`
+	Hook                string     `json:"hook"`
+	CTA                 string     `json:"cta"`
+	TemplateSlug        string     `json:"templateSlug"`
+	ScheduledAt         *string    `json:"scheduledAt"`
+	NotifyDestinationID *uuid.UUID `json:"notifyDestinationId"`
+	PublishedAt         *string    `json:"publishedAt"`
+	PublishedURL        string     `json:"publishedUrl"`
+	Notes               string     `json:"notes"`
 }
 
 func (b socialPostBody) toCreate() presencesvc.CreatePostInput {
@@ -378,28 +415,30 @@ func (b socialPostBody) toCreate() presencesvc.CreatePostInput {
 		Hook:         b.Hook,
 		CTA:          b.CTA,
 		TemplateSlug: b.TemplateSlug,
-		ScheduledAt:  parseOptionalDateTime(b.ScheduledAt),
-		PublishedAt:  parseOptionalDateTime(b.PublishedAt),
+		ScheduledAt:         parseOptionalDateTime(b.ScheduledAt),
+		NotifyDestinationID: b.NotifyDestinationID,
+		PublishedAt:         parseOptionalDateTime(b.PublishedAt),
 		PublishedURL: b.PublishedURL,
 		Notes:        b.Notes,
 	}
 }
 
 type socialPostUpdateBody struct {
-	ProjectID    *uuid.UUID `json:"projectId"`
-	CampaignID   *uuid.UUID `json:"campaignId"`
-	Platform     *string    `json:"platform"`
-	Goal         *string    `json:"goal"`
-	Status       *string    `json:"status"`
-	Title        *string    `json:"title"`
-	Body         *string    `json:"body"`
-	Hook         *string    `json:"hook"`
-	CTA          *string    `json:"cta"`
-	TemplateSlug *string    `json:"templateSlug"`
-	ScheduledAt  *string    `json:"scheduledAt"`
-	PublishedAt  *string    `json:"publishedAt"`
-	PublishedURL *string    `json:"publishedUrl"`
-	Notes        *string    `json:"notes"`
+	ProjectID           *uuid.UUID `json:"projectId"`
+	CampaignID          *uuid.UUID `json:"campaignId"`
+	Platform            *string    `json:"platform"`
+	Goal                *string    `json:"goal"`
+	Status              *string    `json:"status"`
+	Title               *string    `json:"title"`
+	Body                *string    `json:"body"`
+	Hook                *string    `json:"hook"`
+	CTA                 *string    `json:"cta"`
+	TemplateSlug        *string    `json:"templateSlug"`
+	ScheduledAt         *string    `json:"scheduledAt"`
+	NotifyDestinationID *uuid.UUID `json:"notifyDestinationId"`
+	PublishedAt         *string    `json:"publishedAt"`
+	PublishedURL        *string    `json:"publishedUrl"`
+	Notes               *string    `json:"notes"`
 }
 
 func (b socialPostUpdateBody) toUpdate() presencesvc.UpdatePostInput {
@@ -426,6 +465,10 @@ func (b socialPostUpdateBody) toUpdate() presencesvc.UpdatePostInput {
 	if b.ScheduledAt != nil {
 		in.ScheduledAt = parseOptionalDateTime(b.ScheduledAt)
 		in.ScheduledSet = true
+	}
+	if b.NotifyDestinationID != nil {
+		in.NotifyDestinationID = b.NotifyDestinationID
+		in.NotifyDestinationSet = true
 	}
 	if b.PublishedAt != nil {
 		in.PublishedAt = parseOptionalDateTime(b.PublishedAt)

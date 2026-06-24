@@ -97,6 +97,7 @@ type CreatePostInput struct {
 	ScheduledAt  *time.Time
 	PublishedAt  *time.Time
 	PublishedURL string
+	NotifyDestinationID *uuid.UUID
 	Notes        string
 }
 
@@ -115,6 +116,8 @@ type UpdatePostInput struct {
 	TemplateSlug *string
 	ScheduledAt  *time.Time
 	ScheduledSet bool
+	NotifyDestinationID *uuid.UUID
+	NotifyDestinationSet bool
 	PublishedAt  *time.Time
 	PublishedSet bool
 	PublishedURL *string
@@ -355,9 +358,10 @@ func (s *Service) CreatePost(ctx context.Context, in CreatePostInput) (*models.S
 		Body:         body,
 		Hook:         strings.TrimSpace(in.Hook),
 		CTA:          strings.TrimSpace(in.CTA),
-		TemplateSlug: strings.TrimSpace(in.TemplateSlug),
-		ScheduledAt:  in.ScheduledAt,
-		PublishedAt:  in.PublishedAt,
+		TemplateSlug:        strings.TrimSpace(in.TemplateSlug),
+		ScheduledAt:         in.ScheduledAt,
+		NotifyDestinationID: in.NotifyDestinationID,
+		PublishedAt:         in.PublishedAt,
 		PublishedURL: strings.TrimSpace(in.PublishedURL),
 		Notes:        strings.TrimSpace(in.Notes),
 	}
@@ -420,6 +424,9 @@ func (s *Service) UpdatePost(ctx context.Context, id uuid.UUID, in UpdatePostInp
 	}
 	if in.ScheduledSet {
 		row.ScheduledAt = in.ScheduledAt
+	}
+	if in.NotifyDestinationSet {
+		row.NotifyDestinationID = in.NotifyDestinationID
 	}
 	if in.PublishedSet {
 		row.PublishedAt = in.PublishedAt

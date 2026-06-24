@@ -9,6 +9,37 @@ export type ScheduledJob = {
   enabled: boolean
 }
 
+export type DueSocialPost = {
+  id: string
+  platform: string
+  title: string
+  scheduledAt: string | null
+}
+
+export async function fetchDuePresenceReminders(cfg: Config): Promise<DueSocialPost[]> {
+  const res = await fetch(`${cfg.managementApiUrl}/v1/internal/presence/reminders/due`, {
+    headers: headers(cfg),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`presence due http ${res.status}: ${text}`)
+  }
+  return res.json() as Promise<DueSocialPost[]>
+}
+
+export async function sendPresenceReminder(cfg: Config, postId: string): Promise<unknown> {
+  const res = await fetch(`${cfg.managementApiUrl}/v1/internal/presence/reminders/${postId}/send`, {
+    method: 'POST',
+    headers: headers(cfg),
+  })
+  const text = await res.text()
+  if (!res.ok) {
+    throw new Error(`presence send http ${res.status}: ${text}`)
+  }
+  if (!text) return {}
+  return JSON.parse(text) as unknown
+}
+
 function headers(cfg: Config): Record<string, string> {
   const h: Record<string, string> = { 'Content-Type': 'application/json' }
   if (cfg.workerApiKey) {

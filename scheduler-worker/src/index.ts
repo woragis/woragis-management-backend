@@ -1,6 +1,6 @@
 import http from 'node:http'
 import { loadConfig } from './config.js'
-import { executeJob, fetchDueJobs } from './management-client.js'
+import { executeJob, fetchDueJobs, fetchDuePresenceReminders, sendPresenceReminder } from './management-client.js'
 import pino from 'pino'
 
 const log = pino({ name: 'scheduler-worker' })
@@ -11,14 +11,28 @@ async function tick(cfg: ReturnType<typeof loadConfig>): Promise<void> {
     return
   }
   const jobs = await fetchDueJobs(cfg)
-  if (jobs.length === 0) return
-  log.info({ count: jobs.length }, 'due jobs')
-  for (const job of jobs) {
-    try {
-      const result = await executeJob(cfg, job.id)
-      log.info({ jobId: job.id, name: job.name, result }, 'job executed')
-    } catch (err) {
-      log.error({ err, jobId: job.id, name: job.name }, 'job execution failed')
+  if (jobs.length > 0) {
+    log.info({ count: jobs.length }, 'due jobs')
+    for (const job of jobs) {
+      try {
+        const result = await executeJob(cfg, job.id)
+        log.info({ jobId: job.id, name: job.name, result }, 'job executed')
+      } catch (err) {
+        log.error({ err, jobId: job.id, name: job.name }, 'job execution failed')
+      }
+    }
+  }
+
+  const posts = await fetchDuePresenceReminders(cfg)
+  if (posts.length > 0) {
+    log.info({ count: posts.length }, 'due presence reminders')
+    for (const post of posts) {
+      try {
+        const result = await sendPresenceReminder(cfg, post.id)
+        log.info({ postId: post.id, platform: post.platform, result }, 'presence reminder sent')
+      } catch (err) {
+        log.error({ err, postId: post.id }, 'presence reminder failed')
+      }
     }
   }
 }

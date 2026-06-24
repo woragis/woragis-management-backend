@@ -191,6 +191,8 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("GET /v1/admin/presence/posts/{id}", admin(ph.getPost))
 		mux.Handle("PATCH /v1/admin/presence/posts/{id}", admin(ph.updatePost))
 		mux.Handle("DELETE /v1/admin/presence/posts/{id}", admin(ph.deletePost))
+		mux.Handle("GET /v1/admin/presence/settings", admin(ph.getSettings))
+		mux.Handle("PATCH /v1/admin/presence/settings", admin(ph.updateSettings))
 	}
 
 	if app.Messaging != nil && app.Scheduler != nil && app.WorkerAPIKey != "" {
@@ -199,6 +201,12 @@ func Mount(mux *http.ServeMux, app *App) {
 		}
 		mux.Handle("GET /v1/internal/scheduler/due", worker(handleSchedulerDue(app.Messaging)))
 		mux.Handle("POST /v1/internal/scheduler/jobs/{id}/execute", worker(handleSchedulerExecute(app.Scheduler)))
+		if app.Presence != nil {
+			mux.Handle("GET /v1/internal/presence/reminders/due", worker(handlePresenceDueReminders(app.Presence)))
+		}
+		if app.PresenceReminder != nil {
+			mux.Handle("POST /v1/internal/presence/reminders/{id}/send", worker(handlePresenceSendReminder(app.PresenceReminder)))
+		}
 	}
 
 	if app.Personality != nil {

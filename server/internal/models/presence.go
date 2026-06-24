@@ -61,10 +61,20 @@ type SocialPost struct {
 	Hook         string     `gorm:"size:500" json:"hook"`
 	CTA          string     `gorm:"column:cta;size:500" json:"cta"`
 	TemplateSlug string     `gorm:"column:template_slug;size:64" json:"templateSlug"`
-	ScheduledAt  *time.Time `gorm:"column:scheduled_at;index" json:"scheduledAt"`
-	PublishedAt  *time.Time `gorm:"column:published_at" json:"publishedAt"`
+	ScheduledAt          *time.Time `gorm:"column:scheduled_at;index" json:"scheduledAt"`
+	ReminderSentAt       *time.Time `gorm:"column:reminder_sent_at" json:"reminderSentAt"`
+	NotifyDestinationID  *uuid.UUID `gorm:"column:notify_destination_id;type:uuid" json:"notifyDestinationId"`
+	PublishedAt          *time.Time `gorm:"column:published_at" json:"publishedAt"`
 	PublishedURL string     `gorm:"column:published_url;size:500" json:"publishedUrl"`
 	Notes        string     `gorm:"type:text" json:"notes"`
 	CreatedAt    time.Time  `json:"createdAt"`
 	UpdatedAt    time.Time  `json:"updatedAt"`
+}
+
+type PresenceSettings struct {
+	ID                   uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
+	RemindersEnabled     bool       `gorm:"not null;default:true" json:"remindersEnabled"`
+	DefaultDestinationID *uuid.UUID `gorm:"column:default_destination_id;type:uuid" json:"defaultDestinationId"`
+	CreatedAt            time.Time  `json:"createdAt"`
+	UpdatedAt            time.Time  `json:"updatedAt"`
 }
