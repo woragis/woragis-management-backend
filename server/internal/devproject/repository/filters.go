@@ -87,6 +87,30 @@ func (r *Repository) CountProjectsActive(ctx context.Context) (int64, error) {
 	return n, nil
 }
 
+type GroupCount struct {
+	Key   string `json:"key"`
+	Count int64  `json:"count"`
+}
+
+func (r *Repository) CountProjectsGrouped(ctx context.Context, column string) ([]GroupCount, error) {
+	col := strings.TrimSpace(column)
+	switch col {
+	case "maturity", "intent":
+	default:
+		return nil, fmt.Errorf("unsupported group column: %s", column)
+	}
+	var rows []GroupCount
+	err := r.db.WithContext(ctx).Model(&models.Project{}).
+		Select(col+" AS key, COUNT(*) AS count").
+		Group(col).
+		Order("count DESC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, fmt.Errorf("count projects by %s: %w", col, err)
+	}
+	return rows, nil
+}
+
 func (r *Repository) ListSecretsExpiringBefore(ctx context.Context, before time.Time) ([]models.ProjectSecret, error) {
 	var out []models.ProjectSecret
 	err := r.db.WithContext(ctx).

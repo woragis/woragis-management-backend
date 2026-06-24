@@ -26,12 +26,14 @@ type ListFilter struct {
 }
 
 type Dashboard struct {
-	ProjectCount        int64                  `json:"projectCount"`
-	PublicProjectCount  int64                  `json:"publicProjectCount"`
-	ActiveProjectCount  int64                  `json:"activeProjectCount"`
-	MediaCount          int64                  `json:"mediaCount"`
-	SecretsExpiringSoon []models.ProjectSecret `json:"secretsExpiringSoon"`
-	DomainsExpiringSoon []models.ProjectDomain `json:"domainsExpiringSoon"`
+	ProjectCount        int64                            `json:"projectCount"`
+	PublicProjectCount  int64                            `json:"publicProjectCount"`
+	ActiveProjectCount  int64                            `json:"activeProjectCount"`
+	MediaCount          int64                            `json:"mediaCount"`
+	ByMaturity          []repository.GroupCount          `json:"byMaturity"`
+	ByIntent            []repository.GroupCount          `json:"byIntent"`
+	SecretsExpiringSoon []models.ProjectSecret           `json:"secretsExpiringSoon"`
+	DomainsExpiringSoon []models.ProjectDomain           `json:"domainsExpiringSoon"`
 }
 
 type MediaCounter interface {
@@ -85,11 +87,21 @@ func (s *Service) Dashboard(ctx context.Context, media MediaCounter) (*Dashboard
 	if err != nil {
 		return nil, apperrors.InternalCause(apperrors.CodeProjectListV1ServiceLoadFailed, apperrors.MsgProjectListV1ServiceLoadFailed, err)
 	}
+	byMaturity, err := s.repo.CountProjectsGrouped(ctx, "maturity")
+	if err != nil {
+		return nil, apperrors.InternalCause(apperrors.CodeProjectListV1ServiceLoadFailed, apperrors.MsgProjectListV1ServiceLoadFailed, err)
+	}
+	byIntent, err := s.repo.CountProjectsGrouped(ctx, "intent")
+	if err != nil {
+		return nil, apperrors.InternalCause(apperrors.CodeProjectListV1ServiceLoadFailed, apperrors.MsgProjectListV1ServiceLoadFailed, err)
+	}
 	return &Dashboard{
 		ProjectCount:        total,
 		PublicProjectCount:  public,
 		ActiveProjectCount:  active,
 		MediaCount:          mediaCount,
+		ByMaturity:          byMaturity,
+		ByIntent:            byIntent,
 		SecretsExpiringSoon: secrets,
 		DomainsExpiringSoon: domains,
 	}, nil
