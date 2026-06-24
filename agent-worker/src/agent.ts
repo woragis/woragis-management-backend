@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
 import type { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat/completions.js'
-import type { ManagementClient, AgentPersonality } from './api-client.js'
+import type { ManagementClient, AgentPersonality, DestinationContext } from './api-client.js'
 import { pickGreeting } from './personality/greeting.js'
 
 export const toolDefinitions: ChatCompletionTool[] = [
@@ -296,21 +296,31 @@ export const toolDefinitions: ChatCompletionTool[] = [
 export type ChatSession = {
   messages: ChatCompletionMessageParam[]
   greeted: boolean
+  destinationContext?: DestinationContext
 }
 
-export function buildSystemPrompt(p: AgentPersonality): string {
+export function buildSystemPrompt(p: AgentPersonality, dest?: DestinationContext): string {
   const extra = p.systemPromptExtra?.trim()
-  return [
+  const lines = [
     `Você é ${p.assistantName}, assistente pessoal operacional do usuário.`,
     'Responda em português brasileiro, de forma clara e objetiva.',
     'Use as tools para dados reais; nunca invente IDs ou valores financeiros.',
     'Antes de ações destrutivas ou financeiras, peça confirmação explícita.',
     'Posts sociais: crie apenas como draft ou scheduled; nunca marque published sem confirmação.',
     'Se houver contatos homônimos, desambigüe por organização e cargo.',
-    extra ? `Instruções adicionais: ${extra}` : '',
   ]
-    .filter(Boolean)
-    .join('\n')
+  if (dest) {
+    lines.push(
+      `Contexto do canal: conversa no destino "${dest.name}" (${dest.channel}, externalId ${dest.externalId}).`,
+    )
+    if (dest.description?.trim()) lines.push(`Descrição do destino: ${dest.description.trim()}`)
+    if (dest.responsibilities?.trim()) {
+      lines.push(`Responsabilidades do destino: ${dest.responsibilities.trim()}`)
+    }
+    if (dest.tags?.length) lines.push(`Tags: ${dest.tags.join(', ')}`)
+  }
+  if (extra) lines.push(`Instruções adicionais: ${extra}`)
+  return lines.join('\n')
 }
 
 export async function runTool(
@@ -414,7 +424,10 @@ export class AgentLoop {
   async handleUserMessage(session: ChatSession, userText: string): Promise<string> {
     const personality = await this.api.getPersonality()
     if (session.messages.length === 0) {
-      session.messages.push({ role: 'system', content: buildSystemPrompt(personality) })
+      session.messages.push({
+        role: 'system',
+        content: buildSystemPrompt(personality, session.destinationContext),
+      })
     }
     let prefix = ''
     if (!session.greeted) {

@@ -5,6 +5,7 @@ import { ManagementClient } from './api-client.js'
 import { AgentLoop, type ChatSession } from './agent.js'
 import { composeMessage, type ComposeInput } from './automated-compose.js'
 import { sendToChannel, type InboundPayload } from './channel-clients.js'
+import { transcribeAudio } from './transcribe.js'
 import pino from 'pino'
 
 const log = pino({ name: 'agent-worker' })
@@ -38,11 +39,36 @@ function readJson<T>(req: http.IncomingMessage): Promise<T> {
   })
 }
 
+async function ensureDestinationContext(
+  api: ManagementClient,
+  session: ChatSession,
+  payload: InboundPayload,
+): Promise<string | undefined> {
+  if (!session.destinationContext) {
+    try {
+      const dest = await api.resolveDestination(payload.channel, payload.externalId)
+      session.destinationContext = {
+        id: dest.id,
+        channel: dest.channel,
+        externalId: dest.externalId,
+        name: dest.name,
+        description: dest.description,
+        responsibilities: dest.responsibilities,
+        tags: dest.tags,
+      }
+    } catch {
+      // destination not registered — continue without context
+    }
+  }
+  return payload.destinationId ?? session.destinationContext?.id
+}
+
 export function createAgentServer(
   cfg: Config,
   sessions: Map<string, ChatSession>,
   agent: AgentLoop | null,
   openai: OpenAI | null,
+  api: ManagementClient,
 ): http.Server {
   return http.createServer(async (req, res) => {
     const send = (status: number, body: unknown) => {
@@ -82,11 +108,37 @@ export function createAgentServer(
           session = { messages: [], greeted: false }
           sessions.set(key, session)
         }
+        const destinationId = await ensureDestinationContext(api, session, payload)
         const reply = await agent.handleUserMessage(session, payload.text.trim())
-        await sendToChannel(cfg, payload.channel, payload.externalId, reply, payload.destinationId)
+        await sendToChannel(cfg, payload.channel, payload.externalId, reply, destinationId)
         send(200, { ok: true, reply })
       } catch (err) {
         log.error({ err }, 'inbound failed')
+        send(500, { error: err instanceof Error ? err.message : String(err) })
+      }
+      return
+    }
+
+    if (req.method === 'POST' && req.url === '/v1/transcribe') {
+      if (!authorizeInbound(cfg, req)) {
+        send(401, { error: 'unauthorized' })
+        return
+      }
+      if (!openai) {
+        send(503, { error: 'OPENAI_API_KEY not configured' })
+        return
+      }
+      try {
+        const body = await readJson<{ audioBase64?: string; mimeType?: string }>(req)
+        if (!body.audioBase64?.trim()) {
+          send(400, { error: 'audioBase64 is required' })
+          return
+        }
+        const audio = Buffer.from(body.audioBase64, 'base64')
+        const text = await transcribeAudio(openai, audio, body.mimeType ?? 'audio/ogg')
+        send(200, { text })
+      } catch (err) {
+        log.error({ err }, 'transcribe failed')
         send(500, { error: err instanceof Error ? err.message : String(err) })
       }
       return
@@ -123,9 +175,10 @@ export function createRuntime(cfg: Config): {
   sessions: Map<string, ChatSession>
   agent: AgentLoop | null
   openai: OpenAI | null
+  api: ManagementClient
 } {
   const api = new ManagementClient(cfg)
   const openai = cfg.openaiApiKey ? new OpenAI({ apiKey: cfg.openaiApiKey }) : null
   const agent = openai ? new AgentLoop(cfg.openaiApiKey, api) : null
-  return { sessions: new Map(), agent, openai }
+  return { sessions: new Map(), agent, openai, api }
 }

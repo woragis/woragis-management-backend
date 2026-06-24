@@ -7,7 +7,7 @@ const log = pino({ name: 'agent-worker' })
 
 async function main() {
   const cfg = loadConfig()
-  const { sessions, agent, openai } = createRuntime(cfg)
+  const { sessions, agent, openai, api } = createRuntime(cfg)
 
   if (!cfg.openaiApiKey) {
     log.warn('OPENAI_API_KEY not set; conversational inbound disabled')
@@ -15,7 +15,7 @@ async function main() {
 
   initTwilioStub(cfg)
 
-  const server = createAgentServer(cfg, sessions, agent, openai)
+  const server = createAgentServer(cfg, sessions, agent, openai, api)
   server.listen(cfg.port, () => log.info({ port: cfg.port }, 'agent-worker listening'))
 }
 

@@ -1,5 +1,21 @@
 import type { Config } from './config.js'
 
+export type ChannelDestination = {
+  id: string
+  channel: string
+  externalId: string
+  name: string
+  description?: string
+  responsibilities?: string
+  tags?: string[]
+  active?: boolean
+}
+
+export type DestinationContext = Pick<
+  ChannelDestination,
+  'id' | 'channel' | 'externalId' | 'name' | 'description' | 'responsibilities' | 'tags'
+>
+
 export type AgentPersonality = {
   assistantName: string
   greetingMorning: string
@@ -179,5 +195,10 @@ export class ManagementClient {
       method: 'POST',
       body: JSON.stringify(body),
     })
+  }
+
+  resolveDestination(channel: string, externalId: string) {
+    const q = new URLSearchParams({ channel, externalId }).toString()
+    return request<ChannelDestination>(this.cfg, `/v1/internal/agent/tools/messaging/resolve-destination?${q}`)
   }
 }
