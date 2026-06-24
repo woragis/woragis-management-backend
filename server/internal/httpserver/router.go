@@ -155,7 +155,7 @@ func Mount(mux *http.ServeMux, app *App) {
 	}
 
 	if app.Messaging != nil {
-		mh := newMessagingHandler(app.Messaging, app.Scheduler, app.WhatsappWorker)
+		mh := newMessagingHandler(app.Messaging, app.Scheduler, app.WhatsappWorker, app.TelegramWorker)
 		mux.Handle("GET /v1/admin/messaging/destinations", admin(mh.listDestinations))
 		mux.Handle("POST /v1/admin/messaging/destinations", admin(mh.createDestination))
 		mux.Handle("GET /v1/admin/messaging/destinations/{id}", admin(mh.getDestination))
@@ -173,6 +173,8 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("DELETE /v1/admin/messaging/jobs/{id}", admin(mh.deleteJob))
 		mux.Handle("GET /v1/admin/messaging/deliveries", admin(mh.listDeliveries))
 		mux.Handle("POST /v1/admin/messaging/destinations/sync-whatsapp", admin(mh.syncWhatsAppDestinations))
+		mux.Handle("POST /v1/admin/messaging/destinations/sync-telegram", admin(mh.syncTelegramDestinations))
+		mux.Handle("GET /v1/admin/messaging/destinations/resolve", admin(mh.resolveDestination))
 		mux.Handle("GET /v1/admin/messaging/catalog", admin(mh.catalogFields))
 		mux.Handle("POST /v1/admin/messaging/templates/preview", admin(mh.previewTemplate))
 	}
@@ -252,5 +254,10 @@ func Mount(mux *http.ServeMux, app *App) {
 		mux.Handle("POST /v1/internal/agent/tools/presence/posts", agent(tools.createSocialPost))
 		mux.Handle("GET /v1/internal/agent/tools/presence/templates", agent(tools.listPostTemplates))
 		mux.Handle("POST /v1/internal/agent/tools/presence/apply-template", agent(tools.applyPostTemplate))
+
+		if app.Messaging != nil {
+			mh := newMessagingHandler(app.Messaging, app.Scheduler, app.WhatsappWorker, app.TelegramWorker)
+			mux.Handle("GET /v1/internal/agent/tools/messaging/resolve-destination", agent(mh.resolveDestination))
+		}
 	}
 }

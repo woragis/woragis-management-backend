@@ -21,8 +21,8 @@ const (
 
 type ChannelDestination struct {
 	ID               uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
-	Channel          string         `gorm:"size:32;not null;index" json:"channel"`
-	ExternalID       string         `gorm:"column:external_id;size:256;not null;index" json:"externalId"`
+	Channel          string         `gorm:"size:32;not null;uniqueIndex:idx_channel_dest_external,priority:1" json:"channel"`
+	ExternalID       string         `gorm:"column:external_id;size:256;not null;uniqueIndex:idx_channel_dest_external,priority:2" json:"externalId"`
 	Name             string         `gorm:"size:200;not null" json:"name"`
 	Description      string         `gorm:"type:text" json:"description"`
 	Responsibilities string         `gorm:"type:text" json:"responsibilities"`

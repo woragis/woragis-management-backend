@@ -248,6 +248,7 @@ func main() {
 		PresenceReminder: presenceReminderExec,
 		Scheduler:        schedulerExec,
 		WhatsappWorker:   whatsappWorkerClient,
+		TelegramWorker:   telegramWorkerClient,
 	}
 
 	cfg := middleware.LoadConfigFromEnv()

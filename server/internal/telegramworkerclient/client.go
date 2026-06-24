@@ -34,6 +34,44 @@ func (c *Client) Enabled() bool {
 	return c != nil && c.baseURL != ""
 }
 
+type Chat struct {
+	ChatID string `json:"chatId"`
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+}
+
+type ChatsResponse struct {
+	Chats []Chat `json:"chats"`
+}
+
+func (c *Client) ListChats(ctx context.Context) (*ChatsResponse, error) {
+	if !c.Enabled() {
+		return nil, fmt.Errorf("telegram worker not configured")
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/v1/chats", nil)
+	if err != nil {
+		return nil, err
+	}
+	if c.workerAPIKey != "" {
+		httpReq.Header.Set("X-Channel-Worker-Key", c.workerAPIKey)
+		httpReq.Header.Set("Authorization", "Bearer "+c.workerAPIKey)
+	}
+	res, err := c.hc.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 300 {
+		b, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("telegram worker chats http %d: %s", res.StatusCode, strings.TrimSpace(string(b)))
+	}
+	var out ChatsResponse
+	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 type SendRequest struct {
 	Message    string `json:"message"`
 	ExternalID string `json:"externalId"`

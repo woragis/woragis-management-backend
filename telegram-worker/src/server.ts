@@ -1,6 +1,7 @@
 import express from 'express'
 import type { Telegraf } from 'telegraf'
 import type { Config } from './config.js'
+import { listKnownChats } from './chat-registry.js'
 
 function authorize(cfg: Config, req: express.Request): boolean {
   if (!cfg.channelWorkerKey) return false
@@ -14,6 +15,14 @@ export function createServer(cfg: Config, bot: Telegraf): express.Express {
 
   app.get('/health', (_req, res) => {
     res.json({ ok: true })
+  })
+
+  app.get('/v1/chats', (req, res) => {
+    if (!authorize(cfg, req)) {
+      res.status(401).json({ error: 'unauthorized' })
+      return
+    }
+    res.json({ chats: listKnownChats() })
   })
 
   app.post('/v1/send', async (req, res) => {

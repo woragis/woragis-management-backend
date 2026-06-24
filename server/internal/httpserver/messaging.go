@@ -13,6 +13,7 @@ import (
 	msgtemplaterender "github.com/woragis/management/backend/server/internal/messaging/templaterender"
 	"github.com/woragis/management/backend/server/internal/models"
 	"github.com/woragis/management/backend/server/internal/whatsappworkerclient"
+	"github.com/woragis/management/backend/server/internal/telegramworkerclient"
 	"gorm.io/datatypes"
 )
 
@@ -20,10 +21,11 @@ type messagingHandler struct {
 	svc       *messagingsvc.Service
 	scheduler *executor.Executor
 	whatsapp  *whatsappworkerclient.Client
+	telegram  *telegramworkerclient.Client
 }
 
-func newMessagingHandler(svc *messagingsvc.Service, scheduler *executor.Executor, whatsapp *whatsappworkerclient.Client) *messagingHandler {
-	return &messagingHandler{svc: svc, scheduler: scheduler, whatsapp: whatsapp}
+func newMessagingHandler(svc *messagingsvc.Service, scheduler *executor.Executor, whatsapp *whatsappworkerclient.Client, telegram *telegramworkerclient.Client) *messagingHandler {
+	return &messagingHandler{svc: svc, scheduler: scheduler, whatsapp: whatsapp, telegram: telegram}
 }
 
 func (h *messagingHandler) syncWhatsAppDestinations(w http.ResponseWriter, r *http.Request) {
@@ -33,6 +35,26 @@ func (h *messagingHandler) syncWhatsAppDestinations(w http.ResponseWriter, r *ht
 		return
 	}
 	apperrors.WriteJSON(w, http.StatusOK, res)
+}
+
+func (h *messagingHandler) syncTelegramDestinations(w http.ResponseWriter, r *http.Request) {
+	res, err := h.svc.SyncTelegramDestinations(r.Context(), h.telegram)
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	apperrors.WriteJSON(w, http.StatusOK, res)
+}
+
+func (h *messagingHandler) resolveDestination(w http.ResponseWriter, r *http.Request) {
+	channel := r.URL.Query().Get("channel")
+	externalID := r.URL.Query().Get("externalId")
+	row, err := h.svc.ResolveDestination(r.Context(), channel, externalID)
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	apperrors.WriteJSON(w, http.StatusOK, row)
 }
 
 func (h *messagingHandler) catalogFields(w http.ResponseWriter, r *http.Request) {
