@@ -13,20 +13,22 @@ Documentação de planejamento para o assistente pessoal, domínio de contatos, 
 | [05-entity-catalog.md](./05-entity-catalog.md) | Entidades existentes e o que o agente já pode ler |
 | [07-messaging-platform.md](./07-messaging-platform.md) | Canais, templates, jobs, workers |
 | [08-projects-taxonomy-and-presence.md](./08-projects-taxonomy-and-presence.md) | Dimensões de projeto e domínio Presence |
+| [10-gaps-roadmap.md](./10-gaps-roadmap.md) | Roadmap consolidado dos gaps pós-T3/P4a |
 
 ## Roadmap consolidado (ordem sugerida)
 
 ```text
-C1  Contacts core (CRUD + busca)
-C2  Contact interactions
-F1  Finance ↔ contactId
-P1  Agent personality (Postgres + Redis + tools)
-A0  Agent API foundation (AGENT_API_KEY, /v1/internal/agent/*)
-A1  agent-worker + Telegram texto + tools contacts/finance
-A2  Áudio Telegram (Whisper / Realtime)
-A3  WhatsApp conversacional
-A4  Voz telefônica (Twilio + Realtime)
-UI  Frontend Contacts (opcional, paralelo)
+C1  Contacts core (CRUD + busca)          ✓
+C2  Contact interactions                   ✓
+F1  Finance ↔ contactId                   ✓
+P1  Agent personality (Postgres + Redis)   ✓
+A0  Agent API foundation                   ✓
+A1  agent-worker + Telegram texto          ✓ (com resolve destination)
+A2  Áudio Telegram (Whisper)               ✓
+A3  WhatsApp conversacional                ✓ parcial (inbound + destination context)
+A4  Voz telefônica (Twilio)                stub
+UI  Frontend Contacts + Personality       ✓
+10.x Gaps roadmap (messaging, dashboard, presence, finance alerts)
 ```
 
 ## Princípios
@@ -41,8 +43,11 @@ UI  Frontend Contacts (opcional, paralelo)
 
 | Fase | Status |
 |------|--------|
-| Agent orchestrator | Planejado |
-| Contacts | Planejado |
-| Finance link | Planejado |
-| Agent personality | Planejado |
-| Implementação | Não iniciado |
+| Agent orchestrator (A0–A3, A2 áudio) | Implementado |
+| Contacts (C1–C2) + UI | Implementado |
+| Finance link (F1) + alertas dashboard | Implementado |
+| Agent personality + UI | Implementado |
+| Messaging (resolve destination, sync Telegram, índice único) | Implementado |
+| Projects dashboard (maturidade/intent) | Implementado |
+| Presence P4b-lite (marcar publicado + URL) | Implementado |
+| A4 Twilio voz | Stub apenas |
