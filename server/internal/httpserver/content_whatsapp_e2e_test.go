@@ -31,7 +31,7 @@ func TestAdminWhatsappPreviewE2E(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ch := newContentHandler(content)
+	ch := newContentHandler(content, nil)
 	preview := middleware.AdminAuth("admin-test", http.HandlerFunc(ch.whatsappPreview))
 
 	req := httptest.NewRequest(http.MethodGet, "/v1/admin/content/leetcode/videos/"+video.ID.String()+"/whatsapp-preview", nil)
