@@ -89,12 +89,14 @@ func (e *Executor) ExecuteJob(ctx context.Context, jobID uuid.UUID) (*ExecuteRes
 		message, err = e.composeWithAgent(ctx, tpl, message, renderData, dest)
 		if err != nil {
 			_, _ = e.recordDelivery(ctx, job, dest, templateSlug, message, models.DeliveryStatusFailed, err.Error(), externalRef)
+			_ = e.messaging.MarkJobFailure(ctx, job, time.Now().UTC())
 			return nil, apperrors.InternalErr(apperrors.CodeInternal, err.Error())
 		}
 	}
 
 	if err := e.send(ctx, dest, message, job.ProgramAction, externalRef, templateSlug); err != nil {
 		_, _ = e.recordDelivery(ctx, job, dest, templateSlug, message, models.DeliveryStatusFailed, err.Error(), externalRef)
+		_ = e.messaging.MarkJobFailure(ctx, job, time.Now().UTC())
 		return nil, apperrors.InternalErr(apperrors.CodeInternal, err.Error())
 	}
 

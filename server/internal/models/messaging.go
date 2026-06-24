@@ -58,6 +58,7 @@ type ScheduledJob struct {
 	CronExpr      string         `gorm:"column:cron_expr;size:64;not null" json:"cronExpr"`
 	Timezone      string     `gorm:"size:64;not null;default:America/Sao_Paulo" json:"timezone"`
 	Enabled       bool       `gorm:"not null;default:true;index" json:"enabled"`
+	FailureCount  int        `gorm:"column:failure_count;not null;default:0" json:"failureCount"`
 	LastRunAt     *time.Time `gorm:"column:last_run_at" json:"lastRunAt"`
 	NextRunAt     *time.Time `gorm:"column:next_run_at;index" json:"nextRunAt"`
 	CreatedAt     time.Time  `json:"createdAt"`

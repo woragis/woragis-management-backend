@@ -80,6 +80,44 @@ func (c *Client) Send(ctx context.Context, req SendRequest) error {
 	return nil
 }
 
+type Group struct {
+	JID              string `json:"jid"`
+	Name             string `json:"name"`
+	ParticipantCount int    `json:"participantCount"`
+}
+
+type GroupsResponse struct {
+	Groups []Group `json:"groups"`
+}
+
+func (c *Client) ListGroups(ctx context.Context) (*GroupsResponse, error) {
+	if !c.Enabled() {
+		return nil, fmt.Errorf("whatsapp worker not configured")
+	}
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/v1/groups", nil)
+	if err != nil {
+		return nil, err
+	}
+	if c.workerAPIKey != "" {
+		httpReq.Header.Set("X-Worker-Key", c.workerAPIKey)
+		httpReq.Header.Set("Authorization", "Bearer "+c.workerAPIKey)
+	}
+	res, err := c.hc.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 300 {
+		b, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("whatsapp worker groups http %d: %s", res.StatusCode, strings.TrimSpace(string(b)))
+	}
+	var out GroupsResponse
+	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 func (c *Client) Status(ctx context.Context) (*StatusResponse, error) {
 	if !c.Enabled() {
 		return nil, fmt.Errorf("whatsapp worker not configured")

@@ -194,6 +194,12 @@ func main() {
 	messagingSvc := messagingsvc.New(messagingRepo)
 	contentSvc.SetMessagingTemplates(messagingSvc)
 
+	if waTemplates, err := contentSvc.ListWhatsappTemplates(context.Background()); err != nil {
+		log.Fatalf("list whatsapp templates: %v", err)
+	} else if err := messagingSvc.EnsureLeetcodeTemplates(context.Background(), waTemplates); err != nil {
+		log.Fatalf("leetcode messaging templates: %v", err)
+	}
+
 	msgRenderer := msgtemplaterender.NewEngine(contentSvc, devSvc)
 	agentWorkerClient := agentworkerclient.New(agentworkerclient.Config{
 		BaseURL:     os.Getenv("AGENT_WORKER_URL"),
@@ -241,6 +247,7 @@ func main() {
 		Presence:         presenceSvc,
 		PresenceReminder: presenceReminderExec,
 		Scheduler:        schedulerExec,
+		WhatsappWorker:   whatsappWorkerClient,
 	}
 
 	cfg := middleware.LoadConfigFromEnv()

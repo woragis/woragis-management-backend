@@ -95,6 +95,22 @@ export async function sendToJid(jid: string, text: string): Promise<void> {
   await sock.sendMessage(target, { text })
 }
 
+export type WhatsAppGroup = {
+  jid: string
+  name: string
+  participantCount: number
+}
+
+export async function listGroups(): Promise<WhatsAppGroup[]> {
+  if (!sock || !connected) throw new Error('whatsapp not connected')
+  const groups = await sock.groupFetchAllParticipating()
+  return Object.values(groups).map((g) => ({
+    jid: g.id,
+    name: g.subject?.trim() || g.id,
+    participantCount: g.participants?.length ?? 0,
+  }))
+}
+
 export async function loadPersistedQr(cfg: Config): Promise<void> {
   const qr = await getState(cfg, 'last_qr')
   if (qr) lastQr = qr

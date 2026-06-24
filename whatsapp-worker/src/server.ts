@@ -1,6 +1,6 @@
 import express from 'express'
 import type { Config } from './config.js'
-import { getLastQr, isConnected } from './baileys/session.js'
+import { getLastQr, isConnected, listGroups } from './baileys/session.js'
 import { sendRawMessage } from './sender.js'
 
 function authorize(cfg: Config, req: express.Request): boolean {
@@ -31,6 +31,24 @@ export function createServer(cfg: Config): express.Express {
       return
     }
     res.json({ qr })
+  })
+
+  app.get('/v1/groups', async (req, res) => {
+    if (!authorize(cfg, req)) {
+      res.status(401).json({ error: 'unauthorized' })
+      return
+    }
+    if (!isConnected()) {
+      res.status(503).json({ error: 'whatsapp not connected' })
+      return
+    }
+    try {
+      const groups = await listGroups()
+      res.json({ groups })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      res.status(500).json({ error: msg })
+    }
   })
 
   app.post('/v1/send', async (req, res) => {

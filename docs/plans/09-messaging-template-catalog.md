@@ -48,6 +48,7 @@ ScheduledJob
 
 ## Follow-ups
 
-- WhatsApp group sync from worker
-- Retry/backoff policy for failed deliveries
-- Migrate LeetCode templates fully into Messaging UI
+- ~~WhatsApp group sync from worker~~ — `GET /v1/groups` + `POST .../destinations/sync-whatsapp`
+- ~~Retry/backoff policy for failed deliveries~~ — `failureCount` + exponential delay (5–60 min)
+- ~~Migrate LeetCode templates fully into Messaging UI~~ — `EnsureLeetcodeTemplates` on startup
+- Inbound message → destination linking for agent replies

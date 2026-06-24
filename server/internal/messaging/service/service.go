@@ -430,16 +430,6 @@ func (s *Service) DeleteJob(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (s *Service) MarkJobRun(ctx context.Context, job *models.ScheduledJob, ranAt time.Time) error {
-	job.LastRunAt = &ranAt
-	next, err := computeNextRun(job.CronExpr, job.Timezone, ranAt)
-	if err != nil {
-		return apperrors.InternalCause(apperrors.CodeInternal, "Failed to compute next run.", err)
-	}
-	job.NextRunAt = &next
-	return s.repo.SaveJob(ctx, job)
-}
-
 func (s *Service) RecordDelivery(ctx context.Context, d *models.MessageDelivery) error {
 	if err := s.repo.CreateDelivery(ctx, d); err != nil {
 		return apperrors.InternalCause(apperrors.CodeInternal, "Failed to record delivery.", err)

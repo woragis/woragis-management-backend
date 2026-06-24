@@ -12,16 +12,27 @@ import (
 	messagingsvc "github.com/woragis/management/backend/server/internal/messaging/service"
 	msgtemplaterender "github.com/woragis/management/backend/server/internal/messaging/templaterender"
 	"github.com/woragis/management/backend/server/internal/models"
+	"github.com/woragis/management/backend/server/internal/whatsappworkerclient"
 	"gorm.io/datatypes"
 )
 
 type messagingHandler struct {
 	svc       *messagingsvc.Service
 	scheduler *executor.Executor
+	whatsapp  *whatsappworkerclient.Client
 }
 
-func newMessagingHandler(svc *messagingsvc.Service, scheduler *executor.Executor) *messagingHandler {
-	return &messagingHandler{svc: svc, scheduler: scheduler}
+func newMessagingHandler(svc *messagingsvc.Service, scheduler *executor.Executor, whatsapp *whatsappworkerclient.Client) *messagingHandler {
+	return &messagingHandler{svc: svc, scheduler: scheduler, whatsapp: whatsapp}
+}
+
+func (h *messagingHandler) syncWhatsAppDestinations(w http.ResponseWriter, r *http.Request) {
+	res, err := h.svc.SyncWhatsAppDestinations(r.Context(), h.whatsapp)
+	if err != nil {
+		apperrors.WriteError(w, err)
+		return
+	}
+	apperrors.WriteJSON(w, http.StatusOK, res)
 }
 
 func (h *messagingHandler) catalogFields(w http.ResponseWriter, r *http.Request) {

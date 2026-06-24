@@ -13,6 +13,7 @@ import (
 	presencereminder "github.com/woragis/management/backend/server/internal/presence/reminder"
 	profilesvc "github.com/woragis/management/backend/server/internal/profile/service"
 	"github.com/woragis/management/backend/server/internal/messaging/executor"
+	"github.com/woragis/management/backend/server/internal/whatsappworkerclient"
 	"gorm.io/gorm"
 )
 
@@ -36,4 +37,5 @@ type App struct {
 	Presence         *presencesvc.Service
 	PresenceReminder *presencereminder.Executor
 	Scheduler        *executor.Executor
+	WhatsappWorker   *whatsappworkerclient.Client
 }
