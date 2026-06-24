@@ -339,10 +339,25 @@ func (r *Repository) ListInvoicesDueBetween(ctx context.Context, from, to time.T
 	var out []models.Invoice
 	err := r.db.WithContext(ctx).
 		Where("due_date >= ? AND due_date <= ?", from, to).
+		Where("status IN ?", []string{"open", "overdue"}).
 		Order("due_date ASC").
 		Find(&out).Error
 	if err != nil {
 		return nil, fmt.Errorf("list invoices due: %w", err)
+	}
+	return out, nil
+}
+
+func (r *Repository) ListExpensesDueBetween(ctx context.Context, from, to time.Time) ([]models.Expense, error) {
+	var out []models.Expense
+	err := r.db.WithContext(ctx).
+		Where("active = ?", true).
+		Where("frequency = ?", "one_time").
+		Where("due_date IS NOT NULL AND due_date >= ? AND due_date <= ?", from, to).
+		Order("due_date ASC").
+		Find(&out).Error
+	if err != nil {
+		return nil, fmt.Errorf("list expenses due: %w", err)
 	}
 	return out, nil
 }

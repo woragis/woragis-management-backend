@@ -516,6 +516,7 @@ type FinanceDashboard struct {
 	ActiveIncomeCount  int               `json:"activeIncomeCount"`
 	ActiveExpenseCount int               `json:"activeExpenseCount"`
 	UpcomingInvoices   []models.Invoice  `json:"upcomingInvoices"`
+	UpcomingExpenses   []models.Expense  `json:"upcomingExpenses"`
 }
 
 func (s *Service) Dashboard(ctx context.Context) (*FinanceDashboard, error) {
@@ -540,6 +541,10 @@ func (s *Service) Dashboard(ctx context.Context) (*FinanceDashboard, error) {
 	if err != nil {
 		return nil, apperrors.InternalCause(apperrors.CodeInternal, "Failed to load upcoming invoices.", err)
 	}
+	upcomingExpenses, err := s.repo.ListExpensesDueBetween(ctx, now, now.AddDate(0, 0, 30))
+	if err != nil {
+		return nil, apperrors.InternalCause(apperrors.CodeInternal, "Failed to load upcoming expenses.", err)
+	}
 	return &FinanceDashboard{
 		MonthIncomeCents:   totals.IncomeCents,
 		MonthExpenseCents:  totals.ExpenseCents,
@@ -548,6 +553,7 @@ func (s *Service) Dashboard(ctx context.Context) (*FinanceDashboard, error) {
 		ActiveIncomeCount:  len(incomes),
 		ActiveExpenseCount: len(expenses),
 		UpcomingInvoices:   upcoming,
+		UpcomingExpenses:   upcomingExpenses,
 	}, nil
 }
 
