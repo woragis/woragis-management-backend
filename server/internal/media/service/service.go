@@ -18,8 +18,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const maxUploadBytes = 10 << 20 // 10 MiB
-
 type Service struct {
 	repo    *repository.Repository
 	store   storage.BlobStore
@@ -60,7 +58,9 @@ func (s *Service) Upload(ctx context.Context, in UploadInput) (*models.MediaAsse
 	if in.Reader == nil {
 		return nil, apperrors.Invalid(apperrors.CodeMediaPostV1ServiceFileMissing, apperrors.MsgMediaPostV1ServiceFileMissing)
 	}
-	limited := io.LimitReader(in.Reader, maxUploadBytes+1)
+	mimeType := strings.TrimSpace(in.MimeType)
+	limit := int64(maxBytesForMime(mimeType))
+	limited := io.LimitReader(in.Reader, limit+1)
 	data, err := io.ReadAll(limited)
 	if err != nil {
 		return nil, apperrors.InternalCause(apperrors.CodeMediaPostV1ServiceCreateFailed, apperrors.MsgMediaPostV1ServiceCreateFailed, err)
@@ -68,23 +68,25 @@ func (s *Service) Upload(ctx context.Context, in UploadInput) (*models.MediaAsse
 	if len(data) == 0 {
 		return nil, apperrors.Invalid(apperrors.CodeMediaPostV1ServiceFileMissing, apperrors.MsgMediaPostV1ServiceFileMissing)
 	}
-	if len(data) > maxUploadBytes {
+	if int64(len(data)) > limit {
 		return nil, apperrors.Invalid(apperrors.CodeMediaPostV1ServiceFileTooLarge, apperrors.MsgMediaPostV1ServiceFileTooLarge)
 	}
 
 	id := uuid.New()
 	ext := filepath.Ext(in.Filename)
 	if ext == "" {
-		ext = extFromMime(in.MimeType)
+		ext = extFromMime(mimeType)
 	}
 	key := id.String() + ext
 
-	mimeType := strings.TrimSpace(in.MimeType)
 	if mimeType == "" {
 		mimeType = mime.TypeByExtension(ext)
 	}
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
+	}
+	if !IsGalleryMime(mimeType) && mimeType != "application/pdf" {
+		return nil, apperrors.Invalid(apperrors.CodeMediaPostV1ServiceFileMissing, "Unsupported file type.")
 	}
 
 	if _, err := s.store.Save(ctx, key, bytes.NewReader(data), mimeType); err != nil {
@@ -132,21 +134,4 @@ func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 	_ = s.store.Delete(ctx, m.StorageKey)
 	return nil
-}
-
-func extFromMime(mimeType string) string {
-	switch strings.ToLower(mimeType) {
-	case "image/jpeg":
-		return ".jpg"
-	case "image/png":
-		return ".png"
-	case "image/webp":
-		return ".webp"
-	case "image/gif":
-		return ".gif"
-	case "application/pdf":
-		return ".pdf"
-	default:
-		return ".bin"
-	}
 }

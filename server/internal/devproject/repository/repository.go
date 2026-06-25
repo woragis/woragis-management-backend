@@ -32,7 +32,7 @@ func (r *Repository) FindProjectByID(ctx context.Context, id uuid.UUID) (*models
 		Preload("Links").
 		Preload("Domains").
 		Preload("Gallery", func(db *gorm.DB) *gorm.DB {
-			return db.Order("display_order ASC")
+			return db.Order("display_order ASC").Preload("MediaAsset")
 		}).
 		Preload("Envs", func(db *gorm.DB) *gorm.DB {
 			return db.Order("key ASC")
@@ -65,9 +65,9 @@ func (r *Repository) FindProjectByPublicSlug(ctx context.Context, slug string) (
 	err := r.db.WithContext(ctx).
 		Preload("Links", "is_public = ?", true).
 		Preload("Gallery", func(db *gorm.DB) *gorm.DB {
-			return db.Order("display_order ASC")
+			return db.Order("display_order ASC").Preload("MediaAsset")
 		}).
-		Where("public_slug = ? AND is_public = ?", slug, true).
+		Where("public_slug = ? AND is_public = ? AND access_level = ?", slug, true, "public").
 		First(&p).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -83,9 +83,9 @@ func (r *Repository) ListPublicProjects(ctx context.Context, featuredOnly bool) 
 	q := r.db.WithContext(ctx).
 		Preload("Links", "is_public = ?", true).
 		Preload("Gallery", func(db *gorm.DB) *gorm.DB {
-			return db.Order("display_order ASC")
+			return db.Order("display_order ASC").Preload("MediaAsset")
 		}).
-		Where("is_public = ?", true)
+		Where("is_public = ? AND access_level = ?", true, "public")
 	if featuredOnly {
 		q = q.Where("featured = ?", true)
 	}

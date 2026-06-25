@@ -20,6 +20,7 @@ type ListFilter struct {
 	Maturity       string
 	VisibilityGoal string
 	Distribution   string
+	AccessLevel      string
 	IsPublic       *bool
 	Featured       *bool
 	Query          string
@@ -48,6 +49,7 @@ func (s *Service) ListFiltered(ctx context.Context, f ListFilter) ([]models.Proj
 		Maturity:       f.Maturity,
 		VisibilityGoal: f.VisibilityGoal,
 		Distribution:   f.Distribution,
+		AccessLevel:    f.AccessLevel,
 		IsPublic:       f.IsPublic,
 		Featured:       f.Featured,
 		Query:          f.Query,

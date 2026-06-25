@@ -8,14 +8,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/woragis/management/backend/server/internal/apperrors"
 	devprojectsvc "github.com/woragis/management/backend/server/internal/devproject/service"
+	mediasvc "github.com/woragis/management/backend/server/internal/media/service"
 )
 
 type devprojectHandler struct {
-	svc *devprojectsvc.Service
+	svc   *devprojectsvc.Service
+	media *mediasvc.Service
 }
 
-func newDevprojectHandler(svc *devprojectsvc.Service) *devprojectHandler {
-	return &devprojectHandler{svc: svc}
+func newDevprojectHandler(svc *devprojectsvc.Service, media *mediasvc.Service) *devprojectHandler {
+	return &devprojectHandler{svc: svc, media: media}
 }
 
 func (h *devprojectHandler) list(w http.ResponseWriter, r *http.Request) {
@@ -42,12 +44,13 @@ func (h *devprojectHandler) list(w http.ResponseWriter, r *http.Request) {
 		Maturity:       q.Get("maturity"),
 		VisibilityGoal: q.Get("visibilityGoal"),
 		Distribution:   q.Get("distribution"),
+		AccessLevel:    q.Get("accessLevel"),
 		IsPublic:       isPublic,
 		Featured:       featured,
 		Query:          q.Get("q"),
 	}
 	if filter.Status != "" || filter.Intent != "" || filter.Monetization != "" || filter.Maturity != "" ||
-		filter.VisibilityGoal != "" || filter.Distribution != "" || filter.IsPublic != nil || filter.Featured != nil || filter.Query != "" {
+		filter.VisibilityGoal != "" || filter.Distribution != "" || filter.AccessLevel != "" || filter.IsPublic != nil || filter.Featured != nil || filter.Query != "" {
 		items, err := h.svc.ListFiltered(r.Context(), filter)
 		if err != nil {
 			apperrors.WriteError(w, err)
@@ -279,6 +282,17 @@ func (h *devprojectHandler) createGallery(w http.ResponseWriter, r *http.Request
 		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeProjectGalleryPostV1ServiceMediaInvalid, "Request body is invalid."))
 		return
 	}
+	if h.media != nil && body.MediaAssetID != uuid.Nil {
+		asset, err := h.media.GetByID(r.Context(), body.MediaAssetID)
+		if err != nil {
+			apperrors.WriteError(w, err)
+			return
+		}
+		if !mediasvc.IsGalleryMime(asset.MimeType) {
+			apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeProjectGalleryPostV1ServiceMediaTypeInvalid, apperrors.MsgProjectGalleryPostV1ServiceMediaTypeInvalid))
+			return
+		}
+	}
 	item, err := h.svc.CreateGalleryItem(r.Context(), projectID, body.toInput())
 	if err != nil {
 		apperrors.WriteError(w, err)
@@ -374,6 +388,7 @@ type createProjectBody struct {
 	GithubURL        string     `json:"githubUrl"`
 	RepoVisibility   string     `json:"repoVisibility"`
 	Notes            string     `json:"notes"`
+	AccessLevel      string     `json:"accessLevel"`
 	IsPublic         bool       `json:"isPublic"`
 	Featured         bool       `json:"featured"`
 	DisplayOrder     int        `json:"displayOrder"`
@@ -404,6 +419,8 @@ type updateProjectBody struct {
 	GithubURL        *string    `json:"githubUrl"`
 	RepoVisibility   *string    `json:"repoVisibility"`
 	Notes            *string    `json:"notes"`
+	AccessLevel      *string    `json:"accessLevel"`
+	SecretUnlockPassword string `json:"secretUnlockPassword"`
 	IsPublic         *bool      `json:"isPublic"`
 	Featured         *bool      `json:"featured"`
 	DisplayOrder     *int       `json:"displayOrder"`
@@ -429,6 +446,8 @@ func (b updateProjectBody) toInput() devprojectsvc.UpdateProjectInput {
 		GithubURL:        b.GithubURL,
 		RepoVisibility:   b.RepoVisibility,
 		Notes:            b.Notes,
+		AccessLevel:      b.AccessLevel,
+		SecretUnlockPassword: b.SecretUnlockPassword,
 		IsPublic:         b.IsPublic,
 		Featured:         b.Featured,
 		DisplayOrder:     b.DisplayOrder,

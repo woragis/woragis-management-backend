@@ -81,4 +81,19 @@ const (
 
 	CodeProjectEnvDeleteV1ServiceNotFound = "PROJECT_ENV_DELETE_V1_SERVICE_NOT_FOUND"
 	MsgProjectEnvDeleteV1ServiceNotFound  = "Environment variable not found."
+
+	CodeProjectSecretUnlockRequired = "PROJECT_SECRET_UNLOCK_REQUIRED"
+	MsgProjectSecretUnlockRequired  = "Secret unlock password is required to change access from secret."
+
+	CodeProjectSecretUnlockInvalid = "PROJECT_SECRET_UNLOCK_INVALID"
+	MsgProjectSecretUnlockInvalid  = "Invalid secret unlock password."
+
+	CodeProjectSecretUnlockUnavailable = "PROJECT_SECRET_UNLOCK_UNAVAILABLE"
+	MsgProjectSecretUnlockUnavailable  = "Secret unlock is not configured on the server."
+
+	CodeProjectSecretFeaturedBlocked = "PROJECT_SECRET_FEATURED_BLOCKED"
+	MsgProjectSecretFeaturedBlocked  = "Secret projects cannot be featured."
+
+	CodeProjectGalleryPostV1ServiceMediaTypeInvalid = "PROJECT_GALLERY_POST_V1_SERVICE_MEDIA_TYPE_INVALID"
+	MsgProjectGalleryPostV1ServiceMediaTypeInvalid  = "Gallery only supports images, GIFs, and videos."
 )

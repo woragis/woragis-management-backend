@@ -19,7 +19,7 @@ func Mount(mux *http.ServeMux, app *App) {
 	}
 
 	if app.DevProjects != nil {
-		dh := newDevprojectHandler(app.DevProjects)
+		dh := newDevprojectHandler(app.DevProjects, app.Media)
 		mux.Handle("GET /v1/admin/projects", admin(dh.list))
 		mux.Handle("POST /v1/admin/projects", admin(dh.create))
 		mux.Handle("GET /v1/admin/projects/{id}", admin(dh.get))

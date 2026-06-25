@@ -20,12 +20,17 @@ import (
 var slugPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
 type Service struct {
-	repo       *repository.Repository
-	secretsKey []byte
+	repo             *repository.Repository
+	secretsKey       []byte
+	secretUnlockHash []byte
 }
 
 func New(repo *repository.Repository, secretsKey []byte) *Service {
 	return &Service{repo: repo, secretsKey: secretsKey}
+}
+
+func (s *Service) SetSecretUnlockHash(hash []byte) {
+	s.secretUnlockHash = hash
 }
 
 type CreateProjectInput struct {
@@ -46,6 +51,7 @@ type CreateProjectInput struct {
 	GithubURL        string
 	RepoVisibility   string
 	Notes            string
+	AccessLevel      string
 	IsPublic         bool
 	Featured         bool
 	DisplayOrder     int
@@ -74,6 +80,8 @@ type UpdateProjectInput struct {
 	GithubURL        *string
 	RepoVisibility   *string
 	Notes            *string
+	AccessLevel      *string
+	SecretUnlockPassword string
 	IsPublic         *bool
 	Featured         *bool
 	DisplayOrder     *int
@@ -194,13 +202,20 @@ func (s *Service) Create(ctx context.Context, in CreateProjectInput) (*models.Pr
 		GithubURL:        strings.TrimSpace(in.GithubURL),
 		RepoVisibility:   normalizeRepoVisibility(in.RepoVisibility),
 		Notes:            strings.TrimSpace(in.Notes),
-		IsPublic:         in.IsPublic,
 		Featured:         in.Featured,
 		DisplayOrder:     in.DisplayOrder,
 		PublicSlug:       strings.TrimSpace(in.PublicSlug),
 		CoverImageID:     in.CoverImageID,
 		ParentProjectID:  in.ParentProjectID,
 	}
+	level := in.AccessLevel
+	if level == "" && in.IsPublic {
+		level = "public"
+	}
+	if level == "" {
+		level = "private"
+	}
+	applyAccessLevel(p, level)
 	if err := s.repo.CreateProject(ctx, p); err != nil {
 		return nil, apperrors.InternalCause(apperrors.CodeProjectPostV1ServiceCreateFailed, apperrors.MsgProjectPostV1ServiceCreateFailed, err)
 	}
@@ -210,6 +225,9 @@ func (s *Service) Create(ctx context.Context, in CreateProjectInput) (*models.Pr
 func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateProjectInput) (*models.Project, error) {
 	p, err := s.GetByID(ctx, id)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.guardSecretProjectChange(p, in); err != nil {
 		return nil, err
 	}
 	if in.Name != nil {
@@ -271,10 +289,19 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateProjectInpu
 	if in.Notes != nil {
 		p.Notes = strings.TrimSpace(*in.Notes)
 	}
-	if in.IsPublic != nil {
-		p.IsPublic = *in.IsPublic
+	if in.AccessLevel != nil {
+		applyAccessLevel(p, *in.AccessLevel)
+	} else if in.IsPublic != nil {
+		if *in.IsPublic {
+			applyAccessLevel(p, "public")
+		} else if p.AccessLevel == "public" {
+			applyAccessLevel(p, "private")
+		}
 	}
 	if in.Featured != nil {
+		if p.AccessLevel == "secret" && *in.Featured {
+			return nil, apperrors.Invalid(apperrors.CodeProjectSecretFeaturedBlocked, apperrors.MsgProjectSecretFeaturedBlocked)
+		}
 		p.Featured = *in.Featured
 	}
 	if in.DisplayOrder != nil {

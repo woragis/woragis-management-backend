@@ -26,6 +26,7 @@ type Project struct {
 	GithubURL        string         `gorm:"column:github_url;size:500" json:"githubUrl"`
 	RepoVisibility   string         `gorm:"column:repo_visibility;size:16;not null;default:private" json:"repoVisibility"`
 	Notes            string         `gorm:"type:text" json:"notes"`
+	AccessLevel      string         `gorm:"column:access_level;size:16;not null;default:private;index" json:"accessLevel"`
 	IsPublic         bool           `gorm:"column:is_public;not null;default:false" json:"isPublic"`
 	Featured         bool           `gorm:"not null;default:false" json:"featured"`
 	DisplayOrder     int            `gorm:"column:display_order;not null;default:0" json:"displayOrder"`
@@ -91,12 +92,13 @@ type ProjectSecretView struct {
 }
 
 type ProjectGallery struct {
-	ID           uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
-	ProjectID    uuid.UUID `gorm:"column:project_id;type:uuid;not null;index" json:"projectId"`
-	MediaAssetID uuid.UUID `gorm:"column:media_asset_id;type:uuid;not null" json:"mediaAssetId"`
-	DisplayOrder int       `gorm:"column:display_order;not null;default:0" json:"displayOrder"`
-	Caption      string    `gorm:"size:300" json:"caption"`
-	CreatedAt    time.Time `json:"createdAt"`
+	ID           uuid.UUID   `gorm:"type:uuid;primaryKey" json:"id"`
+	ProjectID    uuid.UUID   `gorm:"column:project_id;type:uuid;not null;index" json:"projectId"`
+	MediaAssetID uuid.UUID   `gorm:"column:media_asset_id;type:uuid;not null" json:"mediaAssetId"`
+	MediaAsset   *MediaAsset `gorm:"foreignKey:MediaAssetID;references:ID" json:"mediaAsset,omitempty"`
+	DisplayOrder int         `gorm:"column:display_order;not null;default:0" json:"displayOrder"`
+	Caption      string      `gorm:"size:300" json:"caption"`
+	CreatedAt    time.Time   `json:"createdAt"`
 }
 
 type ProjectEnv struct {

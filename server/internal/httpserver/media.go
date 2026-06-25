@@ -41,7 +41,7 @@ func (h *mediaHandler) get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *mediaHandler) upload(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(12 << 20); err != nil {
+	if err := r.ParseMultipartForm(105 << 20); err != nil {
 		apperrors.WriteError(w, apperrors.Invalid(apperrors.CodeMediaPostV1ServiceFileMissing, "Invalid multipart form."))
 		return
 	}

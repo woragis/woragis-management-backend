@@ -122,6 +122,12 @@ func main() {
 
 	devRepo := devprojectrepo.New(db)
 	devSvc := devprojectsvc.New(devRepo, loadSecretsKey())
+	if hash := strings.TrimSpace(os.Getenv("PROJECT_SECRET_UNLOCK_PASSWORD_HASH")); hash != "" {
+		devSvc.SetSecretUnlockHash([]byte(hash))
+		log.Print("project secret unlock password configured")
+	} else {
+		log.Print("warning: PROJECT_SECRET_UNLOCK_PASSWORD_HASH not set; demoting secret projects is disabled")
+	}
 
 	financeRepo := financerepo.New(db)
 	financeSvc := financesvc.New(financeRepo)

@@ -35,7 +35,7 @@ func newAgentToolsHandler(app *App) *agentToolsHandler {
 		h.financeH = newFinanceHandler(app.Finance)
 	}
 	if app.DevProjects != nil {
-		h.devH = newDevprojectHandler(app.DevProjects)
+		h.devH = newDevprojectHandler(app.DevProjects, app.Media)
 		h.devProjects = app.DevProjects
 	}
 	if app.Presence != nil {

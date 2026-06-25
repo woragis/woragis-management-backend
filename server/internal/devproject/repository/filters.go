@@ -20,6 +20,7 @@ type ListFilter struct {
 	Distribution   string
 	IsPublic       *bool
 	Featured       *bool
+	AccessLevel      string
 	Query          string
 }
 
@@ -37,6 +38,9 @@ func (r *Repository) ListProjectsFiltered(ctx context.Context, f ListFilter) ([]
 	}
 	if s := strings.TrimSpace(f.Maturity); s != "" {
 		q = q.Where("maturity = ?", s)
+	}
+	if s := strings.TrimSpace(f.AccessLevel); s != "" {
+		q = q.Where("access_level = ?", s)
 	}
 	if s := strings.TrimSpace(f.VisibilityGoal); s != "" {
 		q = q.Where("visibility_goal = ?", s)
@@ -73,7 +77,7 @@ func (r *Repository) CountProjects(ctx context.Context) (int64, error) {
 
 func (r *Repository) CountProjectsPublic(ctx context.Context) (int64, error) {
 	var n int64
-	if err := r.db.WithContext(ctx).Model(&models.Project{}).Where("is_public = ?", true).Count(&n).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&models.Project{}).Where("is_public = ? AND access_level = ?", true, "public").Count(&n).Error; err != nil {
 		return 0, fmt.Errorf("count public projects: %w", err)
 	}
 	return n, nil
